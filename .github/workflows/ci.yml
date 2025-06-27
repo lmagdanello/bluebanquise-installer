@@ -90,7 +90,7 @@ jobs:
             if command -v apt-get >/dev/null 2>&1; then
               apt-get update && apt-get install -y python3 python3-pip python3-venv git curl
             elif command -v dnf >/dev/null 2>&1; then
-              dnf install -y python3 python3-pip python3-devel git curl --allowerasing
+              dnf install -y python3.12 python3.12-pip python3.12-devel git curl --allowerasing
             elif command -v zypper >/dev/null 2>&1; then
               zypper install -y python3 python3-pip python3-venv git curl
             fi
@@ -193,7 +193,7 @@ jobs:
             if command -v apt-get >/dev/null 2>&1; then
               apt-get update && apt-get install -y python3 python3-pip python3-venv git curl
             elif command -v dnf >/dev/null 2>&1; then
-              dnf install -y python3 python3-pip python3-devel git curl --allowerasing
+              dnf install -y python3.12 python3.12-pip python3.12-devel git curl --allowerasing
             fi
           "
           

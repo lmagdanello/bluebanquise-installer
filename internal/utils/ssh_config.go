@@ -103,7 +103,7 @@ func ConfigureSSH(userHome string) error {
 	return nil
 }
 
-// contains checks if a slice contains a specific byte slice
+// contains checks if a slice contains a specific byte slice.
 func contains(slice, item []byte) bool {
 	return len(slice) >= len(item) && string(slice[len(slice)-len(item):]) == string(item)
 }
