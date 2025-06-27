@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// OSMapping maps OS IDs to BlueBanquise compatible names
+// OSMapping maps OS IDs to BlueBanquise compatible names.
 var OSMapping = map[string]string{
 	"rhel":          "rhel",
 	"centos":        "rhel",

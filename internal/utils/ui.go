@@ -2,7 +2,7 @@ package utils
 
 import "fmt"
 
-// ShowCompletionMessage displays the completion message
+// ShowCompletionMessage displays the completion message.
 func ShowCompletionMessage(userName, userHome string) {
 	fmt.Println()
 	fmt.Println("Bootstrap done.")

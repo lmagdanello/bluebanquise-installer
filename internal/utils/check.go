@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// SystemCheck verifies if the system has the necessary prerequisites
+// SystemCheck verifies if the system has the necessary prerequisites.
 func SystemCheck() error {
 	LogInfo("Starting system prerequisites check")
 
@@ -85,7 +85,7 @@ func checkInternetConnectivity() error {
 	return nil
 }
 
-// CheckOfflinePrerequisites verifies prerequisites for offline installation
+// CheckOfflinePrerequisites verifies prerequisites for offline installation.
 func CheckOfflinePrerequisites(collectionsPath string) error {
 	LogInfo("Checking offline prerequisites", "path", collectionsPath)
 
@@ -111,7 +111,7 @@ func CheckOfflinePrerequisites(collectionsPath string) error {
 	return nil
 }
 
-// CheckRequirementsPrerequisites verifies prerequisites for requirements offline installation
+// CheckRequirementsPrerequisites verifies prerequisites for requirements offline installation.
 func CheckRequirementsPrerequisites(requirementsPath string) error {
 	LogInfo("Checking requirements prerequisites", "path", requirementsPath)
 
@@ -155,7 +155,7 @@ func CheckRequirementsPrerequisites(requirementsPath string) error {
 	return nil
 }
 
-// CheckTarballPrerequisites verifies prerequisites for tarball installation
+// CheckTarballPrerequisites verifies prerequisites for tarball installation.
 func CheckTarballPrerequisites(tarballPath string) error {
 	LogInfo("Checking tarball prerequisites", "path", tarballPath)
 

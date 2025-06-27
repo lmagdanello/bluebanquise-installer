@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-// ConfigureSSH sets up SSH configuration for the BlueBanquise user
+// ConfigureSSH sets up SSH configuration for the BlueBanquise user.
 func ConfigureSSH(userHome string) error {
 	LogInfo("Configuring SSH for BlueBanquise user", "home", userHome)
 

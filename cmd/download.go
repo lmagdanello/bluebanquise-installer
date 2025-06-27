@@ -11,10 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	nonExistentPath = "/non/existent/path"
-)
-
 var (
 	downloadPath         string
 	downloadTarball      bool

@@ -9,7 +9,7 @@ import (
 
 var Logger *slog.Logger
 
-// InitLogger initializes the logger for BlueBanquise installer
+// InitLogger initializes the logger for BlueBanquise installer.
 func InitLogger() error {
 	// Try to use LOG_DIR environment variable first
 	logDir := os.Getenv("LOG_DIR")
@@ -54,7 +54,7 @@ func InitLogger() error {
 	return nil
 }
 
-// InitTestLogger initializes the logger for testing
+// InitTestLogger initializes the logger for testing.
 func InitTestLogger() {
 	// Create logger that writes to io.Discard for tests
 	handler := slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
@@ -64,24 +64,24 @@ func InitTestLogger() {
 	slog.SetDefault(Logger)
 }
 
-// LogCommand logs a command execution
+// LogCommand logs a command execution.
 func LogCommand(command string, args ...string) {
 	Logger.Info("Executing command",
 		"command", command,
 		"args", args)
 }
 
-// LogError logs an error with context
+// LogError logs an error with context.
 func LogError(msg string, err error, context ...any) {
 	Logger.Error(msg, append([]any{"error", err}, context...)...)
 }
 
-// LogInfo logs an info message
+// LogInfo logs an info message.
 func LogInfo(msg string, context ...any) {
 	Logger.Info(msg, context...)
 }
 
-// LogWarning logs a warning message
+// LogWarning logs a warning message.
 func LogWarning(msg string, context ...any) {
 	Logger.Warn(msg, context...)
 }

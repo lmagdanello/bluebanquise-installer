@@ -53,133 +53,60 @@ func InstallCollectionsOnline(userHome string) error {
 	return nil
 }
 
-// InstallCollectionsOffline installs BlueBanquise collections from local path.
-func InstallCollectionsOffline(collectionsPath, userHome string) error {
-	utils.LogInfo("Installing collections offline", "collections_path", collectionsPath, "home", userHome)
-
+// InstallCollectionsFromPath installs BlueBanquise collections from a given path.
+func InstallCollectionsFromPath(path, userHome string) error {
+	utils.LogInfo("Installing collections from path", "path", path, "home", userHome)
 	venvDir := filepath.Join(userHome, "ansible_venv")
 	venvBin := filepath.Join(venvDir, "bin")
 	ansibleGalaxy := filepath.Join(venvBin, "ansible-galaxy")
 	collectionsDir := filepath.Join(userHome, ".ansible", "collections")
-
 	// Create collections directory if it doesn't exist.
 	if err := os.MkdirAll(collectionsDir, 0755); err != nil {
 		utils.LogError("Failed to create collections directory", err, "path", collectionsDir)
 		return fmt.Errorf("failed to create collections directory: %v", err)
 	}
-
-	// Check if tarballPath is a file or directory.
-	info, err := os.Stat(collectionsPath)
+	// Check if path is a file or directory.
+	info, err := os.Stat(path)
 	if err != nil {
-		utils.LogError("Failed to stat collections path", err, "path", collectionsPath)
-		return fmt.Errorf("failed to stat collections path: %v", err)
+		utils.LogError("Failed to stat path", err, "path", path)
+		return fmt.Errorf("failed to stat path: %v", err)
 	}
-
 	if info.IsDir() {
-		// Directory containing multiple collections.
-		utils.LogInfo("Processing collections directory", "path", collectionsPath)
-		entries, err := os.ReadDir(collectionsPath)
+		// Directory containing multiple tarballs/collections.
+		utils.LogInfo("Processing directory", "path", path)
+		entries, err := os.ReadDir(path)
 		if err != nil {
-			utils.LogError("Failed to read collections directory", err, "path", collectionsPath)
-			return fmt.Errorf("failed to read collections directory: %v", err)
+			utils.LogError("Failed to read directory", err, "path", path)
+			return fmt.Errorf("failed to read directory: %v", err)
 		}
-
 		for _, entry := range entries {
 			if !entry.IsDir() {
 				name := entry.Name()
 				if strings.HasSuffix(name, ".tar.gz") || strings.HasSuffix(name, ".tgz") {
-					collectionFile := filepath.Join(collectionsPath, name)
-					utils.LogInfo("Installing collection from file", "file", name, "path", collectionFile)
+					file := filepath.Join(path, name)
+					utils.LogInfo("Installing collection from file", "file", name, "path", file)
 					fmt.Printf("Installing collection from file: %s\n", name)
-
-					utils.LogCommand(ansibleGalaxy, "collection", "install", collectionFile, "-p", collectionsDir)
-					cmd := exec.Command(ansibleGalaxy, "collection", "install", collectionFile, "-p", collectionsDir)
+					utils.LogCommand(ansibleGalaxy, "collection", "install", file, "-p", collectionsDir)
+					cmd := exec.Command(ansibleGalaxy, "collection", "install", file, "-p", collectionsDir)
 					if err := cmd.Run(); err != nil {
-						utils.LogError("Failed to install collection from file", err, "file", name, "path", collectionFile)
+						utils.LogError("Failed to install collection from file", err, "file", name, "path", file)
 						return fmt.Errorf("failed to install collection from file %s: %v", name, err)
 					}
 				}
 			}
 		}
 	} else {
-		// Single collection file.
-		utils.LogInfo("Installing collection from single file", "file", filepath.Base(collectionsPath), "path", collectionsPath)
-		fmt.Printf("Installing collection from file: %s\n", filepath.Base(collectionsPath))
-
-		utils.LogCommand(ansibleGalaxy, "collection", "install", collectionsPath, "-p", collectionsDir)
-		cmd := exec.Command(ansibleGalaxy, "collection", "install", collectionsPath, "-p", collectionsDir)
+		// Single file.
+		utils.LogInfo("Installing collection from single file", "file", filepath.Base(path), "path", path)
+		fmt.Printf("Installing collection from file: %s\n", filepath.Base(path))
+		utils.LogCommand(ansibleGalaxy, "collection", "install", path, "-p", collectionsDir)
+		cmd := exec.Command(ansibleGalaxy, "collection", "install", path, "-p", collectionsDir)
 		if err := cmd.Run(); err != nil {
-			utils.LogError("Failed to install collection from file", err, "path", collectionsPath)
+			utils.LogError("Failed to install collection from file", err, "path", path)
 			return fmt.Errorf("failed to install collection from file: %v", err)
 		}
 	}
-
-	utils.LogInfo("Collections installed successfully offline", "path", collectionsPath)
-	return nil
-}
-
-// InstallCollectionsFromTarballs installs BlueBanquise collections from tarball files.
-func InstallCollectionsFromTarballs(tarballPath, userHome string) error {
-	utils.LogInfo("Installing collections from tarballs", "tarball_path", tarballPath, "home", userHome)
-
-	venvDir := filepath.Join(userHome, "ansible_venv")
-	venvBin := filepath.Join(venvDir, "bin")
-	ansibleGalaxy := filepath.Join(venvBin, "ansible-galaxy")
-	collectionsDir := filepath.Join(userHome, ".ansible", "collections")
-
-	// Create collections directory if it doesn't exist.
-	if err := os.MkdirAll(collectionsDir, 0755); err != nil {
-		utils.LogError("Failed to create collections directory", err, "path", collectionsDir)
-		return fmt.Errorf("failed to create collections directory: %v", err)
-	}
-
-	// Check if tarballPath is a file or directory.
-	info, err := os.Stat(tarballPath)
-	if err != nil {
-		utils.LogError("Failed to stat tarball path", err, "path", tarballPath)
-		return fmt.Errorf("failed to stat tarball path: %v", err)
-	}
-
-	if info.IsDir() {
-		// Directory containing multiple tarballs.
-		utils.LogInfo("Processing tarball directory", "path", tarballPath)
-		entries, err := os.ReadDir(tarballPath)
-		if err != nil {
-			utils.LogError("Failed to read tarball directory", err, "path", tarballPath)
-			return fmt.Errorf("failed to read tarball directory: %v", err)
-		}
-
-		for _, entry := range entries {
-			if !entry.IsDir() {
-				name := entry.Name()
-				if strings.HasSuffix(name, ".tar.gz") || strings.HasSuffix(name, ".tgz") {
-					tarballFile := filepath.Join(tarballPath, name)
-					utils.LogInfo("Installing collection from tarball", "file", name, "path", tarballFile)
-					fmt.Printf("Installing collection from tarball: %s\n", name)
-
-					utils.LogCommand(ansibleGalaxy, "collection", "install", tarballFile, "-p", collectionsDir)
-					cmd := exec.Command(ansibleGalaxy, "collection", "install", tarballFile, "-p", collectionsDir)
-					if err := cmd.Run(); err != nil {
-						utils.LogError("Failed to install collection from tarball", err, "file", name, "path", tarballFile)
-						return fmt.Errorf("failed to install collection from tarball %s: %v", name, err)
-					}
-				}
-			}
-		}
-	} else {
-		// Single tarball file.
-		utils.LogInfo("Installing collection from single tarball", "file", filepath.Base(tarballPath), "path", tarballPath)
-		fmt.Printf("Installing collection from tarball: %s\n", filepath.Base(tarballPath))
-
-		utils.LogCommand(ansibleGalaxy, "collection", "install", tarballPath, "-p", collectionsDir)
-		cmd := exec.Command(ansibleGalaxy, "collection", "install", tarballPath, "-p", collectionsDir)
-		if err := cmd.Run(); err != nil {
-			utils.LogError("Failed to install collection from tarball", err, "path", tarballPath)
-			return fmt.Errorf("failed to install collection from tarball: %v", err)
-		}
-	}
-
-	utils.LogInfo("Collections installed successfully from tarballs", "path", tarballPath)
+	utils.LogInfo("Collections installed successfully from path", "path", path)
 	return nil
 }
 
@@ -213,7 +140,7 @@ func InstallCoreVariablesOnline(userHome string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", bbCoreURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", bbCoreURL, http.NoBody)
 	if err != nil {
 		utils.LogError("Failed to create request", err, "url", bbCoreURL)
 		return fmt.Errorf("failed to create request: %v", err)

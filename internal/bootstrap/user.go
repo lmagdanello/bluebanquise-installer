@@ -72,7 +72,7 @@ func CreateBluebanquiseUser(userName, userHome string) error {
 	return nil
 }
 
-// GetUserInfo returns UID and GID for a given user
+// GetUserInfo returns UID and GID for a given user.
 func GetUserInfo(userName string) (int, int, error) {
 	utils.LogInfo("Getting user info", "user", userName)
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// DownloadRequirements downloads Python packages without installing them
+// DownloadRequirements downloads Python packages without installing them.
 func DownloadRequirements(requirements []string, downloadPath string) error {
 	LogInfo("Downloading Python requirements", "requirements", requirements, "path", downloadPath)
 
@@ -46,7 +46,7 @@ func DownloadRequirements(requirements []string, downloadPath string) error {
 	return nil
 }
 
-// InstallRequirementsOffline installs Python packages from local directory
+// InstallRequirementsOffline installs Python packages from local directory.
 func InstallRequirementsOffline(venvPath, requirementsPath string) error {
 	LogInfo("Installing Python requirements offline", "venv", venvPath, "requirements_path", requirementsPath)
 
@@ -82,7 +82,7 @@ func InstallRequirementsOffline(venvPath, requirementsPath string) error {
 	return nil
 }
 
-// InstallRequirements installs Python packages in a virtual environment
+// InstallRequirements installs Python packages in a virtual environment.
 func InstallRequirements(venvPath string, requirements []string) error {
 	LogInfo("Installing Python requirements", "venv", venvPath, "requirements", requirements)
 
@@ -110,7 +110,7 @@ func InstallRequirements(venvPath string, requirements []string) error {
 	return nil
 }
 
-// RHEL 7
+// RHEL 7.
 func ExportRHPython38(userHome string) error {
 	LogInfo("Exporting RHEL7 Python 3.8 environment", "home", userHome)
 
@@ -143,7 +143,7 @@ func ExportRHPython38(userHome string) error {
 	return nil
 }
 
-// Ubuntu 20.04
+// Ubuntu 20.04.
 func BuildPython311FromSource() error {
 	LogInfo("Building Python 3.11 from source for Ubuntu 20.04")
 	fmt.Println("Building Python 3.11 from source...")
@@ -176,7 +176,7 @@ func BuildPython311FromSource() error {
 	return nil
 }
 
-// OpenSUSE
+// OpenSUSE.
 func LinkPython311AsDefault() error {
 	LogInfo("Linking python3.11 as default in OpenSUSE")
 	fmt.Println("Linking python3.11 as default in opensuse...")

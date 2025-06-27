@@ -161,7 +161,7 @@ func DownloadFile(url, filepath string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		LogError("Failed to create request", err, "url", url)
 		return fmt.Errorf("failed to create request: %v", err)

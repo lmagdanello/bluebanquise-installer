@@ -168,14 +168,14 @@ You can optionally use --requirements-path for offline Python package installati
 		// Install collections
 		if tarballPath != "" {
 			utils.LogInfo("Installing collections from tarballs", "path", tarballPath)
-			if err := bootstrap.InstallCollectionsFromTarballs(tarballPath, userHome); err != nil {
+			if err := bootstrap.InstallCollectionsFromPath(tarballPath, userHome); err != nil {
 				utils.LogError("Error installing collections from tarballs", err, "path", tarballPath)
 				fmt.Printf("Error installing collections from tarballs: %v\n", err)
 				os.Exit(1)
 			}
 		} else {
 			utils.LogInfo("Installing collections offline", "path", collectionsPath)
-			if err := bootstrap.InstallCollectionsOffline(collectionsPath, userHome); err != nil {
+			if err := bootstrap.InstallCollectionsFromPath(collectionsPath, userHome); err != nil {
 				utils.LogError("Error installing collections", err, "path", collectionsPath)
 				fmt.Printf("Error installing collections: %v\n", err)
 				os.Exit(1)
