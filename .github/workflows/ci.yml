@@ -138,6 +138,13 @@ jobs:
       - name: Build installer
         run: go build -o bluebanquise-installer .
 
+      - name: Download requirements for offline test
+        run: |
+          # Download requirements on the host (which has internet access)
+          mkdir -p /tmp/offline-packages-host
+          ./bluebanquise-installer download --path /tmp/offline-packages-host/requirements --requirements
+          ./bluebanquise-installer download --path /tmp/offline-packages-host/core-vars --core-vars
+
       - name: Test offline installation on ${{ matrix.distribution }}
         run: |
           # Create valid container name (replace invalid characters)
@@ -148,6 +155,7 @@ jobs:
             --privileged \
             --user root \
             -v $(pwd):/installer \
+            -v /tmp/offline-packages-host:/tmp/offline-packages-host \
             ${{ matrix.image }} \
             tail -f /dev/null
           
@@ -166,13 +174,17 @@ jobs:
           # Wait for dependencies to be fully installed
           sleep 5
           
-          # Download collections, requirements and core-vars in the test container
+          # Download collections in the test container (collections need ansible-galaxy)
           docker exec $CONTAINER_NAME bash -c "
             cd /installer
             mkdir -p /tmp/offline-packages
             ./bluebanquise-installer download --path /tmp/offline-packages/collections
-            ./bluebanquise-installer download --path /tmp/offline-packages/requirements --requirements
-            ./bluebanquise-installer download --path /tmp/offline-packages/core-vars --core-vars
+          "
+          
+          # Copy requirements and core-vars from host to container
+          docker exec $CONTAINER_NAME bash -c "
+            cp -r /tmp/offline-packages-host/requirements /tmp/offline-packages/
+            cp -r /tmp/offline-packages-host/core-vars /tmp/offline-packages/
           "
           
           # Wait for downloads to complete
@@ -221,6 +233,12 @@ jobs:
       - name: Build installer
         run: go build -o bluebanquise-installer .
 
+      - name: Download requirements for tarball test
+        run: |
+          # Download requirements on the host (which has internet access)
+          mkdir -p /tmp/tarball-packages-host
+          ./bluebanquise-installer download --path /tmp/tarball-packages-host/requirements --requirements
+
       - name: Test tarball installation
         run: |
           # Create Ubuntu container for test as root
@@ -228,6 +246,7 @@ jobs:
             --privileged \
             --user root \
             -v $(pwd):/installer \
+            -v /tmp/tarball-packages-host:/tmp/tarball-packages-host \
             ubuntu:22.04 \
             tail -f /dev/null
           
@@ -249,6 +268,11 @@ jobs:
             ./bluebanquise-installer download --path /tmp/tarball-packages --tarball
           "
           
+          # Copy requirements from host to container
+          docker exec test-tarball bash -c "
+            cp -r /tmp/tarball-packages-host/requirements /tmp/tarball-packages/
+          "
+          
           # Wait for downloads to complete
           sleep 5
           
@@ -257,6 +281,7 @@ jobs:
             cd /installer
             ./bluebanquise-installer offline \
               --tarball-path /tmp/tarball-packages \
+              --requirements-path /tmp/tarball-packages/requirements \
               --user testuser \
               --home /tmp/bluebanquise
           "
