@@ -11,10 +11,20 @@ var Logger *slog.Logger
 
 // InitLogger initializes the logger for BlueBanquise installer
 func InitLogger() error {
-	// Create log directory
-	logDir := "/var/log/bluebanquise"
+	// Try to use LOG_DIR environment variable first
+	logDir := os.Getenv("LOG_DIR")
+	if logDir == "" {
+		logDir = "/var/log/bluebanquise"
+	}
+
+	// Try to create log directory
 	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return err
+		// If we can't create /var/log/bluebanquise, try a temporary directory
+		if logDir == "/var/log/bluebanquise" {
+			logDir = os.TempDir()
+		} else {
+			return err
+		}
 	}
 
 	// Create log file
