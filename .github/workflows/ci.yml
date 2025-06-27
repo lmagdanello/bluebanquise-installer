@@ -102,6 +102,9 @@ jobs:
             ./bluebanquise-installer online --user testuser --home /tmp/bluebanquise
           "
           
+          # Wait a moment for any background processes to complete
+          sleep 5
+          
           # Verify installation success
           docker exec $CONTAINER_NAME bash -c "
             ls -la /tmp/bluebanquise/
@@ -208,6 +211,9 @@ jobs:
               --home /tmp/bluebanquise
           "
           
+          # Wait a moment for any background processes to complete
+          sleep 5
+          
           # Verify installation success
           docker exec $CONTAINER_NAME bash -c "
             ls -la /tmp/bluebanquise/
@@ -269,6 +275,9 @@ jobs:
               --user testuser \
               --home /tmp/bluebanquise
           "
+          
+          # Wait a moment for any background processes to complete
+          sleep 5
           
           # Verify installation success
           docker exec test-tarball bash -c "

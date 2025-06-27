@@ -9,6 +9,11 @@ import (
 	"github.com/lmagdanello/bluebanquise-installer/internal/utils"
 )
 
+const (
+	defaultPythonCmd = "/usr/bin/python3"
+	rhelOSID         = "rhel"
+)
+
 // ConfigureEnvironment sets up the BlueBanquise Python virtual environment and required env vars.
 func ConfigureEnvironment(userName, userHome, collectionsPath string) error {
 	utils.LogInfo("Configuring BlueBanquise environment", "user", userName, "home", userHome)
@@ -24,7 +29,7 @@ func ConfigureEnvironment(userName, userHome, collectionsPath string) error {
 	utils.LogInfo("OS detected for environment configuration", "os", osID, "version", version)
 
 	// RHEL7 specific: Export rh-python38
-	if osID == "rhel" && version == "7" {
+	if osID == rhelOSID && version == "7" {
 		utils.LogInfo("Configuring RHEL7 specific environment")
 		if err := utils.ExportRHPython38(userHome); err != nil {
 			utils.LogError("Failed to export rh-python38 environment", err)
@@ -66,7 +71,7 @@ func ConfigureEnvironment(userName, userHome, collectionsPath string) error {
 	// Determine Python command based on OS
 	var pythonCmd string
 	switch osID {
-	case "rhel":
+	case rhelOSID:
 		switch version {
 		case "7":
 			pythonCmd = "/opt/rh/rh-python38/root/usr/bin/python3"
@@ -75,12 +80,12 @@ func ConfigureEnvironment(userName, userHome, collectionsPath string) error {
 		case "9":
 			pythonCmd = "/usr/bin/python3.12"
 		default:
-			pythonCmd = "/usr/bin/python3"
+			pythonCmd = defaultPythonCmd
 		}
 	case "opensuse-leap":
 		pythonCmd = "/usr/bin/python3.11"
 	default:
-		pythonCmd = "/usr/bin/python3"
+		pythonCmd = defaultPythonCmd
 	}
 
 	utils.LogCommand(pythonCmd, "-m", "venv", venvDir)
@@ -176,7 +181,7 @@ func configureOSSpecificSettings(userHome string) error {
 	utils.LogInfo("OS detected for offline environment configuration", "os", osID, "version", version)
 
 	// RHEL7 specific: Export rh-python38
-	if osID == "rhel" && version == "7" {
+	if osID == rhelOSID && version == "7" {
 		utils.LogInfo("Configuring RHEL7 specific environment")
 		if err := utils.ExportRHPython38(userHome); err != nil {
 			utils.LogError("Failed to export rh-python38 environment", err)
@@ -192,38 +197,17 @@ func createVirtualEnvironment(venvDir string) error {
 	utils.LogInfo("Creating Python virtual environment", "path", venvDir)
 	fmt.Println("Creating Python virtual environment...")
 
-	// Detect OS to get the correct packages
+	// Detect OS to determine the correct Python command
 	osID, version, err := system.DetectOS()
 	if err != nil {
 		utils.LogError("Failed to detect OS", err)
 		return fmt.Errorf("failed to detect OS: %v", err)
 	}
 
-	// Find packages for this OS
-	var packages []string
-	for _, pkg := range system.DependenciePackages {
-		if pkg.OSID == osID && pkg.Version == version {
-			packages = pkg.Packages
-			break
-		}
-	}
-
-	if len(packages) == 0 {
-		utils.LogError("No package definition found", nil, "os", osID, "version", version)
-		return fmt.Errorf("no package definition found for %s %s", osID, version)
-	}
-
-	// Install system packages
-	utils.LogInfo("Installing system packages for virtual environment", "packages", packages)
-	if err := utils.InstallPackages(packages); err != nil {
-		utils.LogError("Failed to install system packages", err, "packages", packages)
-		return fmt.Errorf("failed to install system packages: %v", err)
-	}
-
 	// Determine Python command based on OS
 	var pythonCmd string
 	switch osID {
-	case "rhel":
+	case rhelOSID:
 		switch version {
 		case "7":
 			pythonCmd = "/opt/rh/rh-python38/root/usr/bin/python3"
@@ -232,12 +216,12 @@ func createVirtualEnvironment(venvDir string) error {
 		case "9":
 			pythonCmd = "/usr/bin/python3.12"
 		default:
-			pythonCmd = "/usr/bin/python3"
+			pythonCmd = defaultPythonCmd
 		}
 	case "opensuse-leap":
 		pythonCmd = "/usr/bin/python3.11"
 	default:
-		pythonCmd = "/usr/bin/python3"
+		pythonCmd = defaultPythonCmd
 	}
 
 	utils.LogCommand(pythonCmd, "-m", "venv", venvDir)
