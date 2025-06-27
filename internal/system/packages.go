@@ -66,7 +66,7 @@ var DependenciePackages = []PackageDefinition{
 		OSID:    "rhel",
 		Version: "9",
 		Packages: []string{
-			"git", "python3.12", "python3.12-pip", "python3-policycoreutils", "openssh-clients",
+			"git", "python3", "python3-pip", "python3-policycoreutils", "openssh-clients",
 		},
 	},
 	{
