@@ -52,6 +52,11 @@ func DetectOS() (string, string, error) {
 			} else if strings.Contains(version, "9") {
 				version = "9"
 			}
+		default:
+			// Extract major version (e.g., 9.3 -> 9)
+			if strings.Contains(version, ".") {
+				version = strings.Split(version, ".")[0]
+			}
 		}
 	}
 
