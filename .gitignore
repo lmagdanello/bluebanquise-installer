@@ -40,9 +40,6 @@ tarball-packages/
 # Dependency directories
 vendor/
 
-# Go modules
-/go.sum
-
 # GitHub workflows artifacts
 *.sarif
 
