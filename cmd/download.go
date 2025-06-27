@@ -212,11 +212,10 @@ func downloadTarballs() {
 
 	utils.LogInfo("Downloading BlueBanquise collection tarball")
 	fmt.Println("Downloading BlueBanquise collection tarball...")
-	bluebanquiseCmd := exec.Command(ansibleGalaxy,
+	if err := utils.RunCommand(ansibleGalaxy,
 		"collection", "download",
 		"git+https://github.com/bluebanquise/bluebanquise.git#/collections/infrastructure,master",
-		"-p", downloadPath)
-	if err := bluebanquiseCmd.Run(); err != nil {
+		"-p", downloadPath); err != nil {
 		utils.LogError("Error downloading BlueBanquise tarball", err)
 		fmt.Printf("Error downloading BlueBanquise tarball: %v\n", err)
 		os.Exit(1)
@@ -224,11 +223,10 @@ func downloadTarballs() {
 
 	utils.LogInfo("Downloading community.general collection tarball")
 	fmt.Println("Downloading community.general collection tarball...")
-	communityCmd := exec.Command(ansibleGalaxy,
+	if err := utils.RunCommand(ansibleGalaxy,
 		"collection", "download",
 		"community.general",
-		"-p", downloadPath)
-	if err := communityCmd.Run(); err != nil {
+		"-p", downloadPath); err != nil {
 		utils.LogError("Error downloading community.general tarball", err)
 		fmt.Printf("Error downloading community.general tarball: %v\n", err)
 		os.Exit(1)
@@ -242,6 +240,18 @@ func downloadTarballs() {
 
 	utils.LogInfo("Tarballs downloaded successfully", "path", downloadPath)
 	fmt.Printf("Tarballs downloaded successfully to: %s\n", downloadPath)
+
+	// List contents to verify download
+	entries, err := os.ReadDir(downloadPath)
+	if err != nil {
+		utils.LogWarning("Could not read download directory", "error", err, "path", downloadPath)
+	} else {
+		utils.LogInfo("Download directory contents", "path", downloadPath, "entries", len(entries))
+		for _, entry := range entries {
+			utils.LogInfo("Downloaded file", "name", entry.Name(), "is_dir", entry.IsDir())
+		}
+	}
+
 	fmt.Println("Transfer these files to your target machine and install with:")
 	fmt.Println("  ansible-galaxy collection install <tarball-file> -p <collections-directory>")
 	fmt.Println("  ./bluebanquise-installer offline --collections-path <collections-directory>")

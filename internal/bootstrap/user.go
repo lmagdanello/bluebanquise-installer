@@ -55,6 +55,13 @@ func CreateBluebanquiseUser(userName, userHome string) error {
 	sudoers := fmt.Sprintf("%s ALL=(ALL:ALL) NOPASSWD:ALL\n", userName)
 	sudoersPath := fmt.Sprintf("/etc/sudoers.d/%s", userName)
 	utils.LogInfo("Creating sudoers entry", "user", userName, "path", sudoersPath)
+
+	// Create sudoers.d directory if it doesn't exist
+	if err := os.MkdirAll("/etc/sudoers.d", 0755); err != nil {
+		utils.LogError("Failed to create sudoers.d directory", err, "path", "/etc/sudoers.d")
+		return fmt.Errorf("failed to create sudoers.d directory: %v", err)
+	}
+
 	if err := os.WriteFile(sudoersPath, []byte(sudoers), 0644); err != nil {
 		utils.LogError("Failed to write sudoers file", err, "path", sudoersPath)
 		return fmt.Errorf("failed to write sudoers file: %v", err)
