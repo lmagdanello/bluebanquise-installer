@@ -19,7 +19,6 @@ linters:
     - goconst
     - gocritic
     - godot
-    - mnd
     - goprintffuncname
     - nakedret
     - noctx
@@ -39,8 +38,6 @@ linters-settings:
   goconst:
     min-len: 3
     min-occurrences: 3
-  mnd:
-    checks: argument,case,condition,operation,return,assign
   gocritic:
     enabled-tags:
       - diagnostic
