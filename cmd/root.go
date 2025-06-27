@@ -27,7 +27,10 @@ All commands support custom user configuration with --user and --home flags.
 For more information, visit: https://bluebanquise.com`,
 	Run: func(cmd *cobra.Command, args []string) {
 		utils.LogInfo("Showing help information")
-		cmd.Help()
+		if err := cmd.Help(); err != nil {
+			utils.LogError("Error showing help", err)
+			os.Exit(1)
+		}
 	},
 }
 

@@ -2,12 +2,14 @@ package utils
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 func detectPackageManager() (string, error) {
@@ -156,7 +158,17 @@ func EnsureLineInSudoers(line string) error {
 func DownloadFile(url, filepath string) error {
 	LogInfo("Downloading file", "url", url, "path", filepath)
 
-	resp, err := http.Get(url)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		LogError("Failed to create request", err, "url", url)
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		LogError("Failed to download file", err, "url", url)
 		return fmt.Errorf("failed to download file: %v", err)

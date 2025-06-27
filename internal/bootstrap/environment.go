@@ -103,9 +103,34 @@ func ConfigureEnvironment(userName, userHome, collectionsPath string) error {
 func ConfigureEnvironmentOffline(userName, userHome, requirementsPath string) error {
 	utils.LogInfo("Configuring BlueBanquise environment offline", "user", userName, "home", userHome, "requirements_path", requirementsPath)
 
-	venvDir := filepath.Join(userHome, "ansible_venv")
-	bashrc := filepath.Join(userHome, ".bashrc")
+	// Detect OS and configure RHEL7 specific settings
+	if err := configureOSSpecificSettings(userHome); err != nil {
+		return err
+	}
 
+	// Create virtual environment
+	venvDir := filepath.Join(userHome, "ansible_venv")
+	if err := createVirtualEnvironment(venvDir); err != nil {
+		return err
+	}
+
+	// Install requirements offline if path provided
+	if err := installOfflineRequirements(venvDir, requirementsPath); err != nil {
+		return err
+	}
+
+	// Configure environment files
+	if err := configureEnvironmentFiles(userHome, venvDir); err != nil {
+		return err
+	}
+
+	utils.LogInfo("Offline environment configured successfully", "user", userName, "home", userHome, "requirements_path", requirementsPath)
+	fmt.Println("Environment configured successfully.")
+	return nil
+}
+
+// configureOSSpecificSettings handles OS-specific configuration like RHEL7 rh-python38.
+func configureOSSpecificSettings(userHome string) error {
 	osID, version, err := system.DetectOS()
 	if err != nil {
 		utils.LogError("Failed to detect OS", err)
@@ -122,12 +147,19 @@ func ConfigureEnvironmentOffline(userName, userHome, requirementsPath string) er
 		}
 	}
 
+	return nil
+}
+
+// createVirtualEnvironment creates the Python virtual environment.
+func createVirtualEnvironment(venvDir string) error {
 	utils.LogInfo("Creating Python virtual environment", "path", venvDir)
 	fmt.Println("Creating Python virtual environment...")
+
 	if err := utils.InstallPackages([]string{"python3", "python3-venv"}); err != nil {
 		utils.LogError("Failed to install python3", err)
 		return fmt.Errorf("failed to install python3: %v", err)
 	}
+
 	if _, err := os.Stat(venvDir); os.IsNotExist(err) {
 		if err := utils.InstallPackages([]string{"python3-venv"}); err != nil {
 			utils.LogError("Failed to install python3-venv", err)
@@ -142,7 +174,11 @@ func ConfigureEnvironmentOffline(userName, userHome, requirementsPath string) er
 		return fmt.Errorf("failed to create virtualenv: %v", err)
 	}
 
-	// Install requirements offline if path provided
+	return nil
+}
+
+// installOfflineRequirements installs Python requirements from offline path.
+func installOfflineRequirements(venvDir, requirementsPath string) error {
 	if requirementsPath != "" {
 		utils.LogInfo("Installing Python requirements offline", "requirements_path", requirementsPath)
 		if err := utils.InstallRequirementsOffline(venvDir, requirementsPath); err != nil {
@@ -152,6 +188,12 @@ func ConfigureEnvironmentOffline(userName, userHome, requirementsPath string) er
 	} else {
 		utils.LogInfo("No requirements path provided, skipping Python package installation")
 	}
+	return nil
+}
+
+// configureEnvironmentFiles sets up .bashrc, sudoers, SSH, and bluebanquise directory.
+func configureEnvironmentFiles(userHome, venvDir string) error {
+	bashrc := filepath.Join(userHome, ".bashrc")
 
 	// Add to .bashrc
 	utils.LogInfo("Updating .bashrc with environment variables", "file", bashrc)
@@ -189,7 +231,5 @@ func ConfigureEnvironmentOffline(userName, userHome, requirementsPath string) er
 		return fmt.Errorf("failed to create bluebanquise directory: %v", err)
 	}
 
-	utils.LogInfo("Offline environment configured successfully", "user", userName, "home", userHome, "requirements_path", requirementsPath)
-	fmt.Println("Environment configured successfully.")
 	return nil
 }

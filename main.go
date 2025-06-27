@@ -8,11 +8,11 @@ import (
 )
 
 func main() {
-	// Initialize logger
+	// Initialize logger.
 	if err := utils.InitLogger(); err != nil {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 
-	// Execute the root command
+	// Execute the root command.
 	cmd.Execute()
 }

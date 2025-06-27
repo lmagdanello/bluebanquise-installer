@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        distribution: [ubuntu-22.04, ubuntu-24.04, debian-12, rhel-9, opensuse-leap-15.5]
+        distribution: [ubuntu:22.04, ubuntu:24.04, debian:12, rockylinux:9, opensuse/leap:15.5]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -71,7 +71,7 @@ jobs:
           docker run -d --name test-${{ matrix.distribution }} \
             --privileged \
             -v $(pwd):/installer \
-            ${{ matrix.distribution }}:latest \
+            ${{ matrix.distribution }} \
             tail -f /dev/null
           
           # Wait for container to be ready
@@ -100,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        distribution: [ubuntu-22.04, rhel-9]
+        distribution: [ubuntu:22.04, rockylinux:9]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -151,7 +151,7 @@ jobs:
             --privileged \
             -v $(pwd):/installer \
             -v $(pwd)/offline-packages:/offline-packages \
-            ${{ matrix.distribution }}:latest \
+            ${{ matrix.distribution }} \
             tail -f /dev/null
           
           # Wait for container to be ready

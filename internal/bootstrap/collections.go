@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,78 +9,131 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/lmagdanello/bluebanquise-installer/internal/utils"
 )
 
+// InstallCollectionsOnline installs BlueBanquise collections from GitHub.
 func InstallCollectionsOnline(userHome string) error {
 	utils.LogInfo("Installing collections online", "home", userHome)
 
-	venvBin := filepath.Join(userHome, "ansible_venv", "bin")
+	venvDir := filepath.Join(userHome, "ansible_venv")
+	venvBin := filepath.Join(venvDir, "bin")
 	ansibleGalaxy := filepath.Join(venvBin, "ansible-galaxy")
+	collectionsDir := filepath.Join(userHome, ".ansible", "collections")
 
-	utils.LogInfo("Installing community.general collection")
-	fmt.Println("Installing community.general collection...")
-	for i := range 3 {
-		utils.LogCommand(ansibleGalaxy, "collection", "install", "community.general")
-		cmd := exec.Command(ansibleGalaxy, "collection", "install", "community.general")
-		err := cmd.Run()
-		if err == nil {
-			utils.LogInfo("community.general collection installed successfully")
-			break
-		}
-		utils.LogWarning("community.general installation failed, retrying", "attempt", i+1, "error", err)
-		fmt.Println("Retrying community.general installation...")
+	// Create collections directory if it doesn't exist.
+	if err := os.MkdirAll(collectionsDir, 0755); err != nil {
+		utils.LogError("Failed to create collections directory", err, "path", collectionsDir)
+		return fmt.Errorf("failed to create collections directory: %v", err)
 	}
 
-	utils.LogInfo("Installing BlueBanquise collection from GitHub")
-	fmt.Println("Installing BlueBanquise collection from GitHub...")
-	utils.LogCommand(ansibleGalaxy, "collection", "install", "git+https://github.com/bluebanquise/bluebanquise.git#/collections/infrastructure,master", "-vvv", "--upgrade")
-	cmd := exec.Command(ansibleGalaxy,
-		"collection", "install",
-		"git+https://github.com/bluebanquise/bluebanquise.git#/collections/infrastructure,master",
-		"-vvv", "--upgrade")
+	utils.LogInfo("Installing BlueBanquise collections", "collections_dir", collectionsDir)
+	fmt.Println("Installing BlueBanquise collections...")
+
+	utils.LogCommand(ansibleGalaxy, "collection", "install", "git+https://github.com/bluebanquise/bluebanquise.git#/collections/infrastructure,master", "-p", collectionsDir)
+	cmd := exec.Command(ansibleGalaxy, "collection", "install", "git+https://github.com/bluebanquise/bluebanquise.git#/collections/infrastructure,master", "-p", collectionsDir)
 	if err := cmd.Run(); err != nil {
-		utils.LogError("Failed to install BlueBanquise collection from GitHub", err)
-		return fmt.Errorf("failed to install BlueBanquise collection from GitHub: %v", err)
+		utils.LogError("Failed to install BlueBanquise collections", err)
+		return fmt.Errorf("failed to install BlueBanquise collections: %v", err)
 	}
 
-	utils.LogInfo("Collections installed successfully online")
+	utils.LogInfo("Installing community.general collection", "collections_dir", collectionsDir)
+	fmt.Println("Installing community.general collection...")
+
+	utils.LogCommand(ansibleGalaxy, "collection", "install", "community.general", "-p", collectionsDir)
+	cmd = exec.Command(ansibleGalaxy, "collection", "install", "community.general", "-p", collectionsDir)
+	if err := cmd.Run(); err != nil {
+		utils.LogError("Failed to install community.general collection", err)
+		return fmt.Errorf("failed to install community.general collection: %v", err)
+	}
+
+	utils.LogInfo("Collections installed successfully online", "collections_dir", collectionsDir)
 	return nil
 }
 
+// InstallCollectionsOffline installs BlueBanquise collections from local path.
 func InstallCollectionsOffline(collectionsPath, userHome string) error {
 	utils.LogInfo("Installing collections offline", "collections_path", collectionsPath, "home", userHome)
 
-	venvBin := filepath.Join(userHome, "ansible_venv", "bin")
+	venvDir := filepath.Join(userHome, "ansible_venv")
+	venvBin := filepath.Join(venvDir, "bin")
 	ansibleGalaxy := filepath.Join(venvBin, "ansible-galaxy")
-	fmt.Printf("Installing BlueBanquise collection from local path: %s\n", collectionsPath)
+	collectionsDir := filepath.Join(userHome, ".ansible", "collections")
 
-	utils.LogCommand(ansibleGalaxy, "collection", "install", collectionsPath)
-	cmd := exec.Command(ansibleGalaxy, "collection", "install", collectionsPath)
-	if err := cmd.Run(); err != nil {
-		utils.LogError("Failed to install local BlueBanquise collection", err, "path", collectionsPath)
-		return fmt.Errorf("failed to install local BlueBanquise collection: %v", err)
+	// Create collections directory if it doesn't exist.
+	if err := os.MkdirAll(collectionsDir, 0755); err != nil {
+		utils.LogError("Failed to create collections directory", err, "path", collectionsDir)
+		return fmt.Errorf("failed to create collections directory: %v", err)
+	}
+
+	// Check if tarballPath is a file or directory.
+	info, err := os.Stat(collectionsPath)
+	if err != nil {
+		utils.LogError("Failed to stat collections path", err, "path", collectionsPath)
+		return fmt.Errorf("failed to stat collections path: %v", err)
+	}
+
+	if info.IsDir() {
+		// Directory containing multiple collections.
+		utils.LogInfo("Processing collections directory", "path", collectionsPath)
+		entries, err := os.ReadDir(collectionsPath)
+		if err != nil {
+			utils.LogError("Failed to read collections directory", err, "path", collectionsPath)
+			return fmt.Errorf("failed to read collections directory: %v", err)
+		}
+
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				name := entry.Name()
+				if strings.HasSuffix(name, ".tar.gz") || strings.HasSuffix(name, ".tgz") {
+					collectionFile := filepath.Join(collectionsPath, name)
+					utils.LogInfo("Installing collection from file", "file", name, "path", collectionFile)
+					fmt.Printf("Installing collection from file: %s\n", name)
+
+					utils.LogCommand(ansibleGalaxy, "collection", "install", collectionFile, "-p", collectionsDir)
+					cmd := exec.Command(ansibleGalaxy, "collection", "install", collectionFile, "-p", collectionsDir)
+					if err := cmd.Run(); err != nil {
+						utils.LogError("Failed to install collection from file", err, "file", name, "path", collectionFile)
+						return fmt.Errorf("failed to install collection from file %s: %v", name, err)
+					}
+				}
+			}
+		}
+	} else {
+		// Single collection file.
+		utils.LogInfo("Installing collection from single file", "file", filepath.Base(collectionsPath), "path", collectionsPath)
+		fmt.Printf("Installing collection from file: %s\n", filepath.Base(collectionsPath))
+
+		utils.LogCommand(ansibleGalaxy, "collection", "install", collectionsPath, "-p", collectionsDir)
+		cmd := exec.Command(ansibleGalaxy, "collection", "install", collectionsPath, "-p", collectionsDir)
+		if err := cmd.Run(); err != nil {
+			utils.LogError("Failed to install collection from file", err, "path", collectionsPath)
+			return fmt.Errorf("failed to install collection from file: %v", err)
+		}
 	}
 
 	utils.LogInfo("Collections installed successfully offline", "path", collectionsPath)
 	return nil
 }
 
+// InstallCollectionsFromTarballs installs BlueBanquise collections from tarball files.
 func InstallCollectionsFromTarballs(tarballPath, userHome string) error {
 	utils.LogInfo("Installing collections from tarballs", "tarball_path", tarballPath, "home", userHome)
 
-	venvBin := filepath.Join(userHome, "ansible_venv", "bin")
+	venvDir := filepath.Join(userHome, "ansible_venv")
+	venvBin := filepath.Join(venvDir, "bin")
 	ansibleGalaxy := filepath.Join(venvBin, "ansible-galaxy")
 	collectionsDir := filepath.Join(userHome, ".ansible", "collections")
 
-	// Create collections directory if it doesn't exist
+	// Create collections directory if it doesn't exist.
 	if err := os.MkdirAll(collectionsDir, 0755); err != nil {
 		utils.LogError("Failed to create collections directory", err, "path", collectionsDir)
 		return fmt.Errorf("failed to create collections directory: %v", err)
 	}
 
-	// Check if tarballPath is a file or directory
+	// Check if tarballPath is a file or directory.
 	info, err := os.Stat(tarballPath)
 	if err != nil {
 		utils.LogError("Failed to stat tarball path", err, "path", tarballPath)
@@ -87,7 +141,7 @@ func InstallCollectionsFromTarballs(tarballPath, userHome string) error {
 	}
 
 	if info.IsDir() {
-		// Directory containing multiple tarballs
+		// Directory containing multiple tarballs.
 		utils.LogInfo("Processing tarball directory", "path", tarballPath)
 		entries, err := os.ReadDir(tarballPath)
 		if err != nil {
@@ -113,7 +167,7 @@ func InstallCollectionsFromTarballs(tarballPath, userHome string) error {
 			}
 		}
 	} else {
-		// Single tarball file
+		// Single tarball file.
 		utils.LogInfo("Installing collection from single tarball", "file", filepath.Base(tarballPath), "path", tarballPath)
 		fmt.Printf("Installing collection from tarball: %s\n", filepath.Base(tarballPath))
 
@@ -129,16 +183,17 @@ func InstallCollectionsFromTarballs(tarballPath, userHome string) error {
 	return nil
 }
 
+// InstallCoreVariablesOnline installs core variables by downloading from GitHub.
 func InstallCoreVariablesOnline(userHome string) error {
 	utils.LogInfo("Installing core variables online", "home", userHome)
 
-	// Validate userHome is not empty
+	// Validate userHome is not empty.
 	if userHome == "" {
 		utils.LogError("User home directory is empty", nil)
 		return fmt.Errorf("user home directory cannot be empty")
 	}
 
-	// Create inventory directory structure
+	// Create inventory directory structure.
 	inventoryDir := filepath.Join(userHome, "bluebanquise", "inventory")
 	groupVarsDir := filepath.Join(inventoryDir, "group_vars", "all")
 
@@ -148,14 +203,24 @@ func InstallCoreVariablesOnline(userHome string) error {
 		return fmt.Errorf("failed to create inventory directory: %v", err)
 	}
 
-	// Download bb_core.yml from GitHub
-	bbCoreURL := "https://raw.githubusercontent.com/bluebanquise/bluebanquise/master/resources/bb_core.yml"
+	// Download bb_core.yml from GitHub.
+	bbCoreURL := "https://raw.githubusercontent.com/bluebanquise/bluebanquise/refs/heads/master/resources/bb_core.yml"
 	bbCorePath := filepath.Join(groupVarsDir, "bb_core.yml")
 
 	utils.LogInfo("Downloading bb_core.yml", "url", bbCoreURL, "path", bbCorePath)
 	fmt.Println("Downloading core variables from GitHub...")
 
-	resp, err := http.Get(bbCoreURL)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", bbCoreURL, nil)
+	if err != nil {
+		utils.LogError("Failed to create request", err, "url", bbCoreURL)
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		utils.LogError("Failed to download bb_core.yml", err, "url", bbCoreURL)
 		return fmt.Errorf("failed to download bb_core.yml: %v", err)
@@ -184,16 +249,17 @@ func InstallCoreVariablesOnline(userHome string) error {
 	return nil
 }
 
+// InstallCoreVariablesOffline installs core variables from local path.
 func InstallCoreVariablesOffline(coreVarsPath, userHome string) error {
 	utils.LogInfo("Installing core variables offline", "core_vars_path", coreVarsPath, "home", userHome)
 
-	// Validate userHome is not empty
+	// Validate userHome is not empty.
 	if userHome == "" {
 		utils.LogError("User home directory is empty", nil)
 		return fmt.Errorf("user home directory cannot be empty")
 	}
 
-	// Create inventory directory structure
+	// Create inventory directory structure.
 	inventoryDir := filepath.Join(userHome, "bluebanquise", "inventory")
 	groupVarsDir := filepath.Join(inventoryDir, "group_vars", "all")
 
@@ -203,7 +269,7 @@ func InstallCoreVariablesOffline(coreVarsPath, userHome string) error {
 		return fmt.Errorf("failed to create inventory directory: %v", err)
 	}
 
-	// Check if coreVarsPath is a file or directory
+	// Check if coreVarsPath is a file or directory.
 	info, err := os.Stat(coreVarsPath)
 	if err != nil {
 		utils.LogError("Failed to stat core variables path", err, "path", coreVarsPath)
@@ -211,7 +277,7 @@ func InstallCoreVariablesOffline(coreVarsPath, userHome string) error {
 	}
 
 	if info.IsDir() {
-		// Directory containing multiple variable files
+		// Directory containing multiple variable files.
 		utils.LogInfo("Processing core variables directory", "path", coreVarsPath)
 		entries, err := os.ReadDir(coreVarsPath)
 		if err != nil {
@@ -237,7 +303,7 @@ func InstallCoreVariablesOffline(coreVarsPath, userHome string) error {
 			}
 		}
 	} else {
-		// Single variable file
+		// Single variable file.
 		destFile := filepath.Join(groupVarsDir, "bb_core.yml")
 		utils.LogInfo("Installing core variable file", "source", coreVarsPath, "dest", destFile)
 		fmt.Printf("Installing core variable file: %s\n", filepath.Base(coreVarsPath))

@@ -2,196 +2,6 @@
 
 A Go CLI tool to automate the installation of [BlueBanquise](https://github.com/bluebanquise/bluebanquise), a coherent collection of Ansible roles designed to deploy and manage large groups of hosts (clusters of nodes).
 
-## About BlueBanquise
-
-BlueBanquise is a generic collection that can adapt to any type of architecture (High Performance Computing clusters, university or enterprise infrastructures, Blender render farm, K8S cluster, etc.). A specific focus is made on scalability for very large clusters.
-
-## Features
-
-This CLI provides:
-
-- **Online Installation**: Downloads and installs BlueBanquise directly from GitHub
-- **Offline Installation**: Installs from pre-downloaded local collections, tarballs, and Python requirements
-- **Automatic OS Detection**: Supports RHEL/CentOS/Rocky/AlmaLinux, Ubuntu, Debian, OpenSUSE
-- **Automatic Configuration**: Creates user, Python virtual environment and necessary configurations
-- **Multi-Distribution Support**: Specific configurations for each OS version
-- **Custom User Support**: Configure custom username and home directory
-- **Complete Offline Support**: Download collections and Python requirements for air-gapped environments
-- **Core Variables Installation**: Automatically installs BlueBanquise core variables (bb_core.yml)
-
-## Core Variables
-
-BlueBanquise requires core variables to be installed in your inventory at `group_vars/all/` level. The installer automatically handles this by:
-
-- **Online Mode**: Downloads `bb_core.yml` directly from the [BlueBanquise GitHub repository](https://github.com/bluebanquise/bluebanquise/blob/master/resources/bb_core.yml)
-- **Offline Mode**: Copies the provided `bb_core.yml` file to the correct location
-
-The core variables file contains essential configuration variables that BlueBanquise needs to function properly. You can also:
-
-- Use the vars plugin at ansible-playbook execution: `ANSIBLE_VARS_ENABLED=ansible.builtin.host_group_vars,bluebanquise.infrastructure.core`
-- Add it to your `ansible.cfg` file: `vars_plugins_enabled = ansible.builtin.host_group_vars,bluebanquise.infrastructure.core`
-
-## Supported Distributions
-
-| OS Family | Distribution | Tested Versions | Architectures |
-|-----------|--------------|-----------------|---------------|
-| Red Hat   | RHEL         | 7, 8, 9         | x86_64, aarch64 |
-|           | Rocky Linux  | 8, 9            | x86_64, aarch64 |
-|           | AlmaLinux    | 8, 9            | x86_64, aarch64 |
-|           | CentOS       | 7, 8, Stream    | x86_64, aarch64 |
-| Debian    | Ubuntu       | 20.04, 22.04, 24.04 | x86_64, arm64 |
-|           | Debian       | 11, 12          | x86_64, arm64 |
-| SUSE      | OpenSUSE Leap| 15.5, 15.6      | x86_64, aarch64 |
-|           | SLES         | 15.6            | x86_64, aarch64 |
-
-## CI/CD Pipeline
-
-The project includes a comprehensive CI/CD pipeline using GitHub Actions to ensure code quality and reliability:
-
-### Continuous Integration
-
-The CI pipeline runs on every push and pull request, including:
-
-- **Unit Tests**: Comprehensive test coverage for all components
-- **Integration Tests**: End-to-end workflow testing
-- **Linting**: Code quality checks with golangci-lint
-- **Security Scanning**: Vulnerability analysis with Trivy and gosec
-- **Multi-Platform Testing**: Tests on different distributions and architectures
-- **Offline Installation Testing**: Validates offline installation workflows
-
-### Workflows
-
-#### Main CI (`ci.yml`)
-- **Test**: Unit tests, integration tests, and linting
-- **Online Installation Tests**: Tests installation on Ubuntu 22.04, Ubuntu 24.04, Debian 12, RHEL 9, OpenSUSE Leap 15.5
-- **Offline Installation Tests**: Tests offline installation on Ubuntu 22.04 and RHEL 9
-- **Tarball Installation Tests**: Tests installation using tarball files
-- **Architecture Tests**: Tests on amd64 and arm64 architectures
-- **Integration Tests**: Complete workflow validation
-
-#### Security (`security.yml`)
-- **Dependency Review**: Analyzes dependency changes in PRs
-- **CodeQL Analysis**: Static code analysis for security vulnerabilities
-- **Trivy Scanner**: Vulnerability scanning
-- **Go Security Checker**: Go-specific security analysis
-- **License Check**: Validates license compliance
-
-#### Release (`release.yml`)
-- **Automated Releases**: Creates releases when tags are pushed
-- **Multi-Platform Builds**: Builds for Linux, macOS, and Windows (amd64/arm64)
-- **Checksums**: Generates SHA256 checksums for all binaries
-
-### Local Development
-
-```bash
-# Run CI checks locally
-make ci
-
-# Run CI checks without Docker
-make ci-local
-
-# Run security checks
-make security-check
-
-# Build release binaries
-make release
-
-# Run Docker-based tests
-make test-docker
-```
-
-### Code Quality Tools
-
-- **Pre-commit Hooks**: Automated code quality checks before commits
-- **GolangCI-Lint**: Comprehensive Go linting
-- **Code Coverage**: Minimum 80% coverage requirement
-- **Dependabot**: Automated dependency updates
-
-### Development Setup
-
-```bash
-# Install development tools
-make install-tools
-
-# Setup pre-commit hooks
-pre-commit install
-
-# Setup development environment
-make dev-setup
-```
-
-## Testing
-
-The project includes comprehensive tests to ensure reliability and functionality:
-
-### Running Tests
-
-```bash
-# Run all tests
-make test
-
-# Run unit tests only
-make test-unit
-
-# Run integration tests only
-make test-integration
-
-# Run tests with coverage report
-make test-coverage
-
-# Run tests in verbose mode
-make test-v
-
-# Run tests with race detection
-make test-race
-```
-
-### Test Structure
-
-- **Unit Tests**: Test individual functions and components
-  - `internal/system/packages_test.go` - OS detection and package definitions
-  - `internal/utils/check_test.go` - System prerequisites validation
-  - `internal/bootstrap/user_test.go` - User creation and management
-  - `internal/bootstrap/collections_test.go` - Collections and core variables installation
-  - `cmd/root_test.go` - CLI command structure
-
-- **Integration Tests**: Test complete workflows
-  - `integration_test.go` - End-to-end installation flows
-
-### Test Requirements
-
-- **Unit Tests**: Can run without special privileges
-- **Integration Tests**: Require root privileges for user creation tests
-- **Network Tests**: Some tests require internet connectivity
-
-### Code Quality
-
-```bash
-# Run linter
-make lint
-
-# Format code
-make format
-
-# Install development tools
-make install-tools
-```
-
-## Installation
-
-### Prerequisites
-
-- Go 1.24.3 or higher
-- Root access or sudo for package installation
-
-### Compilation
-
-```bash
-git clone https://github.com/lmagdanello/bluebanquise-installer.git
-cd bluebanquise-installer
-go build -o bluebanquise-installer
-```
-
 ## Usage
 
 ### Online Installation
@@ -320,208 +130,61 @@ sudo ./bluebanquise-installer offline \
   --home /opt/ansible
 ```
 
-## Installing Collections and Requirements for Offline Use
+## Testing
 
-### Method 1: Using the download command (Recommended)
+This project includes comprehensive tests to ensure reliability and functionality:
 
-The easiest way to prepare everything for offline installation:
+### Running Tests
 
-#### Download collections:
 ```bash
-# Download collections to a local directory
-./bluebanquise-installer download --path /tmp/bluebanquise-offline
+# Run all tests
+make test
 
-# Transfer to target machine
-scp -r /tmp/bluebanquise-offline user@target-machine:/tmp/
+# Run unit tests only
+make test-unit
 
-# Install on target machine
-sudo ./bluebanquise-installer offline --collections-path /tmp/bluebanquise-offline/collections
+# Run integration tests only
+make test-integration
+
+# Run tests with coverage report
+make test-coverage
+
+# Run tests in verbose mode
+make test-v
+
+# Run tests with race detection
+make test-race
 ```
 
-#### Download tarballs:
-```bash
-# Download tarballs
-./bluebanquise-installer download --path /tmp/tarballs --tarball
+### Test Structure
 
-# Transfer tarballs to target machine
-scp /tmp/tarballs/*.tar.gz user@target-machine:/tmp/
+- **Unit Tests**: Test individual functions and components
+  - `internal/system/packages_test.go` - OS detection and package definitions
+  - `internal/utils/check_test.go` - System prerequisites validation
+  - `internal/bootstrap/user_test.go` - User creation and management
+  - `internal/bootstrap/collections_test.go` - Collections and core variables installation
+  - `cmd/root_test.go` - CLI command structure
 
-# Install on target machine
-sudo ./bluebanquise-installer offline --tarball-path /tmp/
-```
+- **Integration Tests**: Test complete workflows
+  - `integration_test.go` - End-to-end installation flows
 
-#### Download Python requirements:
-```bash
-# Download Python requirements for offline installation
-./bluebanquise-installer download --path /tmp/requirements --requirements
+### Test Requirements
 
-# Transfer requirements to target machine
-scp -r /tmp/requirements user@target-machine:/tmp/
+- **Unit Tests**: Can run without special privileges
+- **Integration Tests**: Require root privileges for user creation tests
+- **Network Tests**: Some tests require internet connectivity
 
-# Install on target machine with offline requirements
-sudo ./bluebanquise-installer offline \
-  --collections-path /path/to/collections \
-  --requirements-path /tmp/requirements
-```
-
-#### Download core variables:
-```bash
-# Download core variables for offline installation
-./bluebanquise-installer download --path /tmp/core-vars --core-vars
-
-# Transfer core variables to target machine
-scp /tmp/core-vars/bb_core.yml user@target-machine:/tmp/
-
-# Install on target machine with offline core variables
-sudo ./bluebanquise-installer offline \
-  --collections-path /path/to/collections \
-  --core-vars-path /tmp/bb_core.yml
-```
-
-### Method 2: Complete offline preparation
-
-For a complete offline installation, you'll need both collections and Python requirements:
-
-#### On a system with internet access:
+### Code Quality
 
 ```bash
-# 1. Download collections
-./bluebanquise-installer download --path /tmp/bluebanquise-offline
+# Run linter
+make lint
 
-# 2. Download Python requirements
-./bluebanquise-installer download --path /tmp/python-requirements --requirements
+# Format code
+make format
 
-# 3. Download core variables
-./bluebanquise-installer download --path /tmp/core-vars --core-vars
-
-# 4. Create a complete offline package
-mkdir -p /tmp/bluebanquise-complete
-cp -r /tmp/bluebanquise-offline/collections /tmp/bluebanquise-complete/
-cp -r /tmp/python-requirements /tmp/bluebanquise-complete/
-cp /tmp/core-vars/bb_core.yml /tmp/bluebanquise-complete/
-
-# 5. Transfer to target machine
-scp -r /tmp/bluebanquise-complete user@target-machine:/tmp/
-```
-
-#### On the target machine (air-gapped):
-
-```bash
-# Install with complete offline package
-sudo ./bluebanquise-installer offline \
-  --collections-path /tmp/bluebanquise-complete/collections \
-  --requirements-path /tmp/bluebanquise-complete/python-requirements \
-  --core-vars-path /tmp/bluebanquise-complete/bb_core.yml
-```
-
-### Method 3: Manual download from Ansible Galaxy
-
-For more control over which collections to download:
-
-1. **Find and download collections from Ansible Galaxy**
-
-   From a workstation with internet access, go to [galaxy.ansible.com](https://galaxy.ansible.com) and find the BlueBanquise collection.
-
-   - Search for "bluebanquise"
-   - Click on the BlueBanquise collection
-   - Click "Download Tarball" to download the collection archive
-
-2. **Download required dependencies**
-
-   You'll also need to download:
-   - `community.general` collection
-   - Any other collections your playbooks require
-
-3. **Download Python requirements manually**
-
-   ```bash
-   # Create requirements.txt with BlueBanquise requirements
-   cat > requirements.txt << EOF
-   ansible-core>=2.15.0
-   ansible>=2.15.0
-   jinja2>=3.0.0
-   pyyaml>=6.0
-   EOF
-
-   # Download packages without installing
-   pip download -r requirements.txt -d /tmp/python-requirements
-   cp requirements.txt /tmp/python-requirements/
-   ```
-
-4. **Transfer archives to target machine**
-
-   ```bash
-   # Transfer collection archives to target machine
-   scp ~/Downloads/bluebanquise-infrastructure-*.tar.gz user@target-machine:~/
-   scp ~/Downloads/community-general-*.tar.gz user@target-machine:~/
-   scp -r /tmp/python-requirements user@target-machine:~/
-   ```
-
-5. **Install on target machine**
-
-   ```bash
-   # Install using tarballs with offline requirements
-   sudo ./bluebanquise-installer offline \
-     --tarball-path ~/ \
-     --requirements-path ~/python-requirements
-   
-   # Or install manually and use collections path
-   mkdir -p ~/collections
-   ansible-galaxy collection install ~/bluebanquise-infrastructure-*.tar.gz -p ~/collections/
-   ansible-galaxy collection install ~/community-general-*.tar.gz -p ~/collections/
-   sudo ./bluebanquise-installer offline \
-     --collections-path ~/collections \
-     --requirements-path ~/python-requirements
-   ```
-
-## Python Requirements for Offline Installation
-
-When installing BlueBanquise offline, you need to provide Python packages that would normally be downloaded from PyPI. The installer supports this through the `--requirements-path` option.
-
-### What gets downloaded:
-
-The installer automatically detects your OS and downloads the appropriate Python packages:
-
-- **ansible-core**: Core Ansible functionality
-- **ansible**: Full Ansible package
-- **jinja2**: Template engine used by Ansible
-- **pyyaml**: YAML parser for Ansible playbooks
-- **Additional dependencies**: Any other packages required by the above
-
-### How offline requirements work:
-
-1. **Download phase** (on system with internet):
-   ```bash
-   pip download -r requirements.txt -d /path/to/download
-   ```
-
-2. **Install phase** (on air-gapped system):
-   ```bash
-   pip install --no-index --find-links /path/to/download -r requirements.txt
-   ```
-
-This ensures that all Python dependencies are available offline without requiring internet access during installation.
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Permission denied errors**: Ensure you're running with sudo/root access
-2. **Package manager not found**: The installer supports apt-get, dnf, yum, and zypper
-3. **Python not found**: Ensure python3 is installed and available in PATH
-4. **Internet connectivity issues**: Use offline installation methods for air-gapped environments
-
-### Logs
-
-The installer logs all operations to `/var/log/bluebanquise/bluebanquise-installer.log`. Check this file for detailed information about any issues.
-
-### Debug Mode
-
-Enable debug mode for more verbose output:
-
-```bash
-sudo ./bluebanquise-installer online --debug
-sudo ./bluebanquise-installer offline --debug --collections-path /path/to/collections
+# Install development tools
+make install-tools
 ```
 
 ## Contributing
@@ -532,12 +195,153 @@ sudo ./bluebanquise-installer offline --debug --collections-path /path/to/collec
 4. Add tests if applicable
 5. Submit a pull request
 
+## CI/CD Pipeline
+
+This project features a complete CI/CD pipeline using GitHub Actions to ensure code quality and reliability:
+
+### Continuous Integration
+
+The CI runs on every push and pull request, including:
+
+- **Unit Tests**: Comprehensive test coverage
+- **Integration Tests**: End-to-end workflow testing
+- **Linting**: Code quality checks with golangci-lint
+- **Security Scanning**: Vulnerability analysis with Trivy and gosec
+- **Multi-Platform Testing**: Tests on different distributions and architectures
+- **Offline Installation Testing**: Validates offline installation workflows
+
+### Workflows
+
+#### Main CI (`ci.yml`)
+- **Test**: Unit tests, integration tests, and linting
+- **Online Installation Tests**: Tests installation on Ubuntu 22.04, Ubuntu 24.04, Debian 12, Rocky Linux 9, OpenSUSE Leap 15.5
+- **Offline Installation Tests**: Tests offline installation on Ubuntu 22.04 and Rocky Linux 9
+- **Tarball Installation Tests**: Tests using tarball files
+- **Architecture Tests**: Tests on amd64 and arm64
+- **Integration Tests**: Complete workflow validation
+
+#### Security (`security.yml`)
+- **Dependency Review**: Analyzes dependency changes in PRs
+- **CodeQL Analysis**: Static code analysis for security vulnerabilities
+- **Trivy Scanner**: Vulnerability scanning
+- **Go Security Checker**: Go-specific security analysis
+- **License Check**: Validates license compliance
+
+#### Release (`release.yml`)
+- **Automated Releases**: Creates releases when tags are pushed
+- **Multi-Platform Builds**: Builds for Linux, macOS, and Windows (amd64/arm64)
+- **Checksums**: Generates SHA256 checksums for all binaries
+
+### Local Development
+
+```bash
+# Run CI checks locally
+make ci
+
+# Run CI checks without Docker
+make ci-local
+
+# Run security checks
+make security-check
+
+# Build release binaries
+make release
+
+# Run Docker-based tests
+make test-docker
+```
+
+### Code Quality Tools
+
+- **Pre-commit Hooks**: Automated checks before commits
+- **GolangCI-Lint**: Comprehensive Go linting
+- **Code Coverage**: Minimum 80% coverage required
+
+## About BlueBanquise
+
+BlueBanquise is a generic collection that can be adapted to any type of architecture (HPC clusters, university or enterprise infrastructure, Blender render farm, K8S cluster, etc). Special focus on scalability for very large clusters.
+
+## Features
+
+This CLI provides:
+
+- **Online Installation**: Downloads and installs BlueBanquise directly from GitHub
+- **Offline Installation**: Installs from pre-downloaded local collections, tarballs, and Python requirements
+- **Automatic OS Detection**: Supports RHEL/CentOS/Rocky/AlmaLinux, Ubuntu, Debian, OpenSUSE
+- **Automatic Configuration**: Creates user, Python virtual environment and necessary configurations
+- **Multi-Distribution Support**: Specific configurations for each OS version
+- **Custom User Support**: Configure custom username and home directory
+- **Complete Offline Support**: Download collections and Python requirements for air-gapped environments
+- **Core Variables Installation**: Automatically installs BlueBanquise core variables (bb_core.yml)
+
+## Core Variables
+
+BlueBanquise requires core variables to be installed in your inventory at `group_vars/all/` level. The installer automatically handles this by:
+
+- **Online Mode**: Downloads `bb_core.yml` directly from the [BlueBanquise GitHub repository](https://github.com/bluebanquise/bluebanquise/blob/master/resources/bb_core.yml)
+- **Offline Mode**: Copies the provided `bb_core.yml` file to the correct location
+
+The core variables file contains essential configuration variables that BlueBanquise needs to function properly. You can also:
+
+- Use the vars plugin at ansible-playbook execution: `ANSIBLE_VARS_ENABLED=ansible.builtin.host_group_vars,bluebanquise.infrastructure.core`
+- Add it to your `ansible.cfg` file: `vars_plugins_enabled = ansible.builtin.host_group_vars,bluebanquise.infrastructure.core`
+
+## Supported Distributions
+
+| OS Family | Distribution | Tested Versions | Architectures |
+|-----------|--------------|-----------------|---------------|
+| Red Hat   | RHEL         | 7, 8, 9         | x86_64, aarch64 |
+|           | Rocky Linux  | 8, 9            | x86_64, aarch64 |
+|           | AlmaLinux    | 8, 9            | x86_64, aarch64 |
+|           | CentOS       | 7, 8, Stream    | x86_64, aarch64 |
+| Debian    | Ubuntu       | 20.04, 22.04, 24.04 | x86_64, arm64 |
+|           | Debian       | 11, 12          | x86_64, arm64 |
+| SUSE      | OpenSUSE Leap| 15.5, 15.6      | x86_64, aarch64 |
+|           | SLES         | 15.6            | x86_64, aarch64 |
+
+## Installation
+
+### Prerequisites
+
+- Go 1.24.3 or higher
+- Root access or sudo for package installation
+
+### Compilation
+
+```bash
+git clone https://github.com/lmagdanello/bluebanquise-installer.git
+cd bluebanquise-installer
+go build -o bluebanquise-installer
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Permission denied errors**: Run with sudo/root
+2. **Package manager not found**: The installer supports apt-get, dnf, yum, and zypper
+3. **Python not found**: Make sure python3 is installed and available in PATH
+4. **Internet connectivity issues**: Use offline installation methods for air-gapped environments
+
+### Logs
+
+The installer logs all operations to `/var/log/bluebanquise/bluebanquise-installer.log`.
+
+### Debug Mode
+
+Enable debug mode for more verbose output:
+
+```bash
+sudo ./bluebanquise-installer online --debug
+sudo ./bluebanquise-installer offline --debug --collections-path /path/to/collections
+```
+
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
 
-- [BlueBanquise](https://github.com/bluebanquise/bluebanquise) - The main project this installer supports
-- [Ansible](https://www.ansible.com/) - The automation platform BlueBanquise is built on
+- [BlueBanquise](https://github.com/bluebanquise/bluebanquise) - Main project
+- [Ansible](https://www.ansible.com/) - Automation platform
 

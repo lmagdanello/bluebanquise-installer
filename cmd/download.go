@@ -11,6 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	nonExistentPath = "/non/existent/path"
+)
+
 var (
 	downloadPath         string
 	downloadTarball      bool
@@ -249,7 +253,7 @@ func downloadCoreVariables() {
 	// Download core variables from GitHub
 	utils.LogInfo("Downloading core variables from GitHub")
 	fmt.Println("Downloading core variables from GitHub...")
-	if err := utils.DownloadFile("https://raw.githubusercontent.com/bluebanquise/bluebanquise/master/bb_core.yml", filepath.Join(downloadPath, "bb_core.yml")); err != nil {
+	if err := utils.DownloadFile("https://raw.githubusercontent.com/bluebanquise/bluebanquise/refs/heads/master/resources/bb_core.yml", filepath.Join(downloadPath, "bb_core.yml")); err != nil {
 		utils.LogError("Error downloading core variables", err)
 		fmt.Printf("Error downloading core variables: %v\n", err)
 		os.Exit(1)
@@ -266,7 +270,10 @@ func init() {
 	downloadCmd.Flags().BoolVarP(&downloadTarball, "tarball", "t", false, "Download tarballs instead of collections directory")
 	downloadCmd.Flags().BoolVarP(&downloadRequirements, "requirements", "r", false, "Download Python requirements for offline installation")
 	downloadCmd.Flags().BoolVarP(&downloadCoreVars, "core-vars", "c", false, "Download core variables for offline installation")
-	downloadCmd.MarkFlagRequired("path")
+	if err := downloadCmd.MarkFlagRequired("path"); err != nil {
+		utils.LogError("Error marking path flag as required", err)
+		os.Exit(1)
+	}
 
 	rootCmd.AddCommand(downloadCmd)
 }

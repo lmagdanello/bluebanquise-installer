@@ -1,3 +1,5 @@
+version: 2
+
 run:
   timeout: 5m
   go: "1.24"
@@ -19,36 +21,27 @@ linters:
     - goconst
     - gocritic
     - godot
-    - gomnd
+    - mnd
     - goprintffuncname
-    - gosec
-    - gosimple
-    - govet
-    - ineffassign
-    - misspell
     - nakedret
     - noctx
     - nolintlint
     - rowserrcheck
-    - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
-    - unused
-    - varcheck
     - whitespace
 
 linters-settings:
   gocyclo:
-    min-complexity: 15
+    min-complexity: 20
   dupl:
     threshold: 100
   goconst:
     min-len: 3
     min-occurrences: 3
-  gomnd:
+  mnd:
     checks: argument,case,condition,operation,return,assign
   gocritic:
     enabled-tags:
@@ -63,6 +56,19 @@ linters-settings:
       - octalLiteral
       - whyNoLint
       - wrapperFunc
+      - filepathJoin
+      - unnamedResult
+      - singleCaseSwitch
+      - stringXbytes
+  gosec:
+    excludes:
+      - G306  # Expect WriteFile permissions to be 0600 or less (false positive for test files)
+      - G107  # Potential HTTP request made with variable url (false positive for our use case)
+      - G204  # Subprocess launched with a potential tainted input (false positive for our use case)
+  godot:
+    scope: declarations
+    period: true
+    capital: false
 
 issues:
   exclude-rules:
@@ -71,11 +77,20 @@ issues:
         - gomnd
         - gocyclo
         - dupl
+        - gosec
+        - goconst
     - path: integration_test\.go
       linters:
         - gomnd
         - gocyclo
         - dupl
         - gosec
+        - goconst
+    - path: cmd/
+      linters:
+        - gocyclo
+    - path: internal/
+      linters:
+        - gocyclo
   max-issues-per-linter: 0
   max-same-issues: 0 

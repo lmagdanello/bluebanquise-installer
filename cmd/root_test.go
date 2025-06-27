@@ -9,7 +9,7 @@ import (
 )
 
 func TestRootCommand(t *testing.T) {
-	// Test that root command can be created
+	// Test that root command can be created.
 	cmd := getRootCmd()
 	assert.NotNil(t, cmd)
 	assert.Equal(t, "bluebanquise-installer", cmd.Use)
@@ -17,7 +17,7 @@ func TestRootCommand(t *testing.T) {
 }
 
 func TestRootCommandHelp(t *testing.T) {
-	// Test that root command shows help
+	// Test that root command shows help.
 	cmd := getRootCmd()
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
@@ -34,7 +34,7 @@ func TestRootCommandHelp(t *testing.T) {
 }
 
 func TestRootCommandNoArgs(t *testing.T) {
-	// Test that root command shows help when no args provided
+	// Test that root command shows help when no args provided.
 	cmd := getRootCmd()
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
@@ -46,9 +46,9 @@ func TestRootCommandNoArgs(t *testing.T) {
 	assert.Contains(t, buf.String(), "BlueBanquise Installer")
 }
 
-// Helper function to get root command for testing
+// Helper function to get root command for testing.
 func getRootCmd() *cobra.Command {
-	// Reset any global state
+	// Reset any global state.
 	rootCmd = &cobra.Command{
 		Use:   "bluebanquise-installer",
 		Short: "BlueBanquise Installer CLI",
@@ -68,7 +68,10 @@ All commands support custom user configuration with --user and --home flags.
 
 For more information, visit: https://bluebanquise.com`,
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
+			if err := cmd.Help(); err != nil {
+				// In test context, we can ignore this error.
+				_ = err
+			}
 		},
 	}
 	return rootCmd

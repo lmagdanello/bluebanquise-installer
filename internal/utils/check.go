@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,21 +17,21 @@ func SystemCheck() error {
 		name  string
 		check func() error
 	}{
-		{"Root access", checkRootAccess},
-		{"Python3", checkPython3},
-		{"Package manager", checkPackageManager},
-		{"Internet connectivity", checkInternetConnectivity},
+		{"root access", checkRootAccess},
+		{"python3", checkPython3},
+		{"package manager", checkPackageManager},
+		{"internet connectivity", checkInternetConnectivity},
 	}
 
 	for _, c := range checks {
 		LogInfo("Running system check", "check", c.name)
 		fmt.Printf("Checking %s... ", c.name)
 		if err := c.check(); err != nil {
-			LogError("System check failed", err, "check", c.name)
+			LogError(fmt.Sprintf("%s check failed", c.name), err)
 			fmt.Printf("FAILED: %v\n", err)
 			return fmt.Errorf("%s check failed: %v", c.name, err)
 		}
-		LogInfo("System check passed", "check", c.name)
+		LogInfo(fmt.Sprintf("%s check passed", c.name))
 		fmt.Println("OK")
 	}
 
@@ -60,32 +61,28 @@ func checkPython3() error {
 
 func checkPackageManager() error {
 	LogInfo("Checking package manager availability")
-	managers := []string{"apt-get", "dnf", "yum", "zypper"}
-	for _, manager := range managers {
-		if _, err := exec.LookPath(manager); err == nil {
-			LogInfo("Package manager found", "manager", manager)
+	candidates := []string{"apt-get", "dnf", "yum", "zypper"}
+	for _, tool := range candidates {
+		if _, err := exec.LookPath(tool); err == nil {
+			LogInfo("Package manager found", "manager", tool)
 			return nil
 		}
 	}
-	LogError("No supported package manager found", nil, "managers", managers)
+	LogError("No supported package manager found", nil, "managers", candidates)
 	return fmt.Errorf("no supported package manager found")
 }
 
 func checkInternetConnectivity() error {
 	LogInfo("Checking internet connectivity")
 	// Try to connect to a reliable host
-	hosts := []string{"8.8.8.8", "1.1.1.1", "github.com"}
-	for _, host := range hosts {
-		LogCommand("ping", "-c", "1", "-W", "5", host)
-		cmd := exec.Command("ping", "-c", "1", "-W", "5", host)
-		if err := cmd.Run(); err == nil {
-			LogInfo("Internet connectivity confirmed", "host", host)
-			return nil
-		}
-		LogWarning("Ping failed", "host", host)
+	conn, err := net.Dial("tcp", "8.8.8.8:53")
+	if err != nil {
+		LogError("No internet connectivity detected", err)
+		return fmt.Errorf("no internet connectivity detected")
 	}
-	LogError("No internet connectivity detected", nil, "hosts", hosts)
-	return fmt.Errorf("no internet connectivity detected")
+	defer conn.Close()
+	LogInfo("Internet connectivity confirmed")
+	return nil
 }
 
 // CheckOfflinePrerequisites verifies prerequisites for offline installation
@@ -168,9 +165,16 @@ func CheckTarballPrerequisites(tarballPath string) error {
 		return fmt.Errorf("tarball path does not exist: %s", tarballPath)
 	}
 
-	// If it's a file, check if it's a tarball
-	if info, err := os.Stat(tarballPath); err == nil && !info.IsDir() {
-		if !strings.HasSuffix(tarballPath, ".tar.gz") && !strings.HasSuffix(tarballPath, ".tgz") {
+	info, err := os.Stat(tarballPath)
+	if err != nil {
+		LogError("Cannot stat tarball path", err, "path", tarballPath)
+		return fmt.Errorf("cannot stat tarball path: %v", err)
+	}
+
+	if !info.IsDir() {
+		// If it's a file, check if it's a tarball
+		name := info.Name()
+		if !strings.HasSuffix(name, ".tar.gz") && !strings.HasSuffix(name, ".tgz") {
 			LogError("File is not a tarball", nil, "path", tarballPath)
 			return fmt.Errorf("file is not a tarball: %s", tarballPath)
 		}
@@ -179,33 +183,41 @@ func CheckTarballPrerequisites(tarballPath string) error {
 	}
 
 	// If it's a directory, check if it contains tarballs
-	if info, err := os.Stat(tarballPath); err == nil && info.IsDir() {
-		entries, err := os.ReadDir(tarballPath)
-		if err != nil {
-			LogError("Cannot read tarball directory", err, "path", tarballPath)
-			return fmt.Errorf("cannot read tarball directory: %v", err)
-		}
-
-		tarballFound := false
-		for _, entry := range entries {
-			if !entry.IsDir() {
-				name := entry.Name()
-				if strings.HasSuffix(name, ".tar.gz") || strings.HasSuffix(name, ".tgz") {
-					tarballFound = true
-					break
-				}
-			}
-		}
-
-		if !tarballFound {
-			LogError("No tarball files found in directory", nil, "path", tarballPath)
-			return fmt.Errorf("no tarball files found in directory: %s", tarballPath)
-		}
-
-		LogInfo("Tarball directory check passed", "path", tarballPath)
-		return nil
+	entries, err := os.ReadDir(tarballPath)
+	if err != nil {
+		LogError("Cannot read tarball directory", err, "path", tarballPath)
+		return fmt.Errorf("cannot read tarball directory: %v", err)
 	}
 
-	LogError("Invalid tarball path", nil, "path", tarballPath)
-	return fmt.Errorf("invalid tarball path: %s", tarballPath)
+	tarballFound := false
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			name := entry.Name()
+			if strings.HasSuffix(name, ".tar.gz") || strings.HasSuffix(name, ".tgz") {
+				tarballFound = true
+				break
+			}
+		}
+	}
+
+	if !tarballFound {
+		LogError("No tarball files found in directory", nil, "path", tarballPath)
+		return fmt.Errorf("no tarball files found in directory: %s", tarballPath)
+	}
+
+	LogInfo("Tarball directory check passed", "path", tarballPath)
+	return nil
+}
+
+// ValidatePath validates if a path exists and is accessible.
+func ValidatePath(path string) error {
+	if path == "" {
+		return fmt.Errorf("invalid tarball path: %s", path)
+	}
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return fmt.Errorf("path does not exist: %s", path)
+	}
+
+	return nil
 }
