@@ -42,7 +42,7 @@ jobs:
           cp LICENSE release/ 2>/dev/null || echo "No LICENSE file found"
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             release/bluebanquise-installer-linux-amd64
