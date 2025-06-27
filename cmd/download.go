@@ -136,8 +136,8 @@ func downloadCollections() {
 	}
 
 	// Install ansible-galaxy in temp environment
-	pip := filepath.Join(tempVenv, "bin", "pip")
-	if err := utils.RunCommand(pip, "install", "ansible-core"); err != nil {
+	python3 := filepath.Join(tempVenv, "bin", "python3")
+	if err := utils.RunCommand(python3, "-m", "pip", "install", "ansible-core"); err != nil {
 		utils.LogError("Error installing ansible-core", err)
 		fmt.Printf("Error installing ansible-core: %v\n", err)
 		os.Exit(1)
@@ -196,8 +196,8 @@ func downloadTarballs() {
 	}
 
 	// Install ansible-galaxy in temp environment
-	pip := filepath.Join(tempVenv, "bin", "pip")
-	if err := utils.RunCommand(pip, "install", "ansible-core"); err != nil {
+	python3 := filepath.Join(tempVenv, "bin", "python3")
+	if err := utils.RunCommand(python3, "-m", "pip", "install", "ansible-core"); err != nil {
 		utils.LogError("Error installing ansible-core", err)
 		fmt.Printf("Error installing ansible-core: %v\n", err)
 		os.Exit(1)

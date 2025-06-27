@@ -33,15 +33,15 @@ func DownloadRequirements(requirements []string, downloadPath string) error {
 
 	LogInfo("Created requirements.txt", "file", requirementsFile, "content", requirementsContent)
 
-	// Check if pip is available
-	if _, err := exec.LookPath("pip"); err != nil {
-		LogError("pip not found in PATH", err)
-		return fmt.Errorf("pip not found in PATH: %v", err)
+	// Check if Python3 is available and use python3 -m pip
+	if _, err := exec.LookPath("python3"); err != nil {
+		LogError("python3 not found in PATH", err)
+		return fmt.Errorf("python3 not found in PATH: %v", err)
 	}
 
-	// Download packages using pip
-	LogCommand("pip", "download", "-r", requirementsFile, "-d", downloadPath)
-	cmd := exec.Command("pip", "download", "-r", requirementsFile, "-d", downloadPath)
+	// Download packages using python3 -m pip
+	LogCommand("python3", "-m", "pip", "download", "-r", requirementsFile, "-d", downloadPath)
+	cmd := exec.Command("python3", "-m", "pip", "download", "-r", requirementsFile, "-d", downloadPath)
 
 	// Capture output for debugging
 	output, err := cmd.CombinedOutput()
@@ -88,7 +88,6 @@ func InstallRequirementsOffline(venvPath, requirementsPath string) error {
 		return fmt.Errorf("requirements path does not exist: %s", requirementsPath)
 	}
 
-	pip := filepath.Join(venvPath, "bin", "pip")
 	requirementsFile := filepath.Join(requirementsPath, "requirements.txt")
 
 	// Check if requirements.txt exists
@@ -97,20 +96,35 @@ func InstallRequirementsOffline(venvPath, requirementsPath string) error {
 		return fmt.Errorf("requirements.txt not found: %s", requirementsFile)
 	}
 
-	// Install packages from local directory
-	args := []string{"install", "--no-index", "--find-links", requirementsPath, "-r", requirementsFile}
-
-	fmt.Printf("Installing Python packages from local directory: %s\n", requirementsPath)
-	LogCommand(pip, args...)
-	cmd := exec.Command(pip, args...)
-	cmd.Stdout = nil
-	cmd.Stderr = nil
-
-	if err := cmd.Run(); err != nil {
-		LogError("Failed to install requirements offline", err, "venv", venvPath, "requirements_path", requirementsPath)
-		return fmt.Errorf("failed to install requirements offline: %v", err)
+	// List contents of requirements directory for debug
+	entries, err := os.ReadDir(requirementsPath)
+	if err != nil {
+		LogError("Cannot read requirements directory", err, "path", requirementsPath)
+		return fmt.Errorf("cannot read requirements directory: %v", err)
 	}
 
+	LogInfo("Requirements directory contents", "path", requirementsPath, "entries", len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			LogInfo("Requirements file", "name", entry.Name())
+		}
+	}
+
+	// Install packages from local directory using python3 -m pip
+	args := []string{"-m", "pip", "install", "--no-index", "--find-links", requirementsPath, "-r", requirementsFile}
+
+	fmt.Printf("Installing Python packages from local directory: %s\n", requirementsPath)
+	LogCommand("python3", args...)
+	cmd := exec.Command("python3", args...)
+
+	// Capture output for debugging
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		LogError("Failed to install requirements offline", err, "venv", venvPath, "requirements_path", requirementsPath, "output", string(output))
+		return fmt.Errorf("failed to install requirements offline: %v, output: %s", err, string(output))
+	}
+
+	LogInfo("pip install completed", "output", string(output))
 	LogInfo("Requirements installed offline successfully", "venv", venvPath, "requirements_path", requirementsPath)
 	return nil
 }
@@ -124,13 +138,13 @@ func InstallRequirements(venvPath string, requirements []string) error {
 		return fmt.Errorf("no requirements provided")
 	}
 
-	pip := filepath.Join(venvPath, "bin", "pip")
+	python3 := filepath.Join(venvPath, "bin", "python3")
 
-	args := append([]string{"install", "--upgrade", "pip"}, requirements...)
+	args := append([]string{"-m", "pip", "install", "--upgrade", "pip"}, requirements...)
 
 	fmt.Printf("Installing Python packages: %s\n", strings.Join(requirements, " "))
-	LogCommand(pip, args...)
-	cmd := exec.Command(pip, args...)
+	LogCommand(python3, args...)
+	cmd := exec.Command(python3, args...)
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 
