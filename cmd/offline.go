@@ -165,7 +165,7 @@ You can optionally use --requirements-path for offline Python package installati
 			utils.LogInfo("Skipping environment configuration")
 		}
 
-		// Install collections
+		// Install collections (requires environment to be configured)
 		if tarballPath != "" {
 			utils.LogInfo("Installing collections from tarballs", "path", tarballPath)
 			if err := bootstrap.InstallCollectionsFromPath(tarballPath, userHome); err != nil {
