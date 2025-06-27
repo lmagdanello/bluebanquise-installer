@@ -34,21 +34,58 @@ func ConfigureEnvironment(userName, userHome, collectionsPath string) error {
 
 	utils.LogInfo("Creating Python virtual environment", "path", venvDir)
 	fmt.Println("Creating Python virtual environment...")
-	if err := utils.InstallPackages([]string{"python3", "python3-venv"}); err != nil {
-		utils.LogError("Failed to install python3", err)
-		return fmt.Errorf("failed to install python3: %v", err)
+
+	// Detect OS to get the correct packages
+	osID, version, err = system.DetectOS()
+	if err != nil {
+		utils.LogError("Failed to detect OS", err)
+		return fmt.Errorf("failed to detect OS: %v", err)
 	}
-	if _, err := os.Stat(venvDir); os.IsNotExist(err) {
-		if err := utils.InstallPackages([]string{"python3-venv"}); err != nil {
-			utils.LogError("Failed to install python3-venv", err)
-			return fmt.Errorf("failed to venv package missing: %v", err)
+
+	// Find packages for this OS
+	var packages []string
+	for _, pkg := range system.DependenciePackages {
+		if pkg.OSID == osID && pkg.Version == version {
+			packages = pkg.Packages
+			break
 		}
 	}
 
-	cmd := filepath.Join("/usr/bin", "python3")
-	utils.LogCommand(cmd, "-m", "venv", venvDir)
-	if err := utils.RunCommand(cmd, "-m", "venv", venvDir); err != nil {
-		utils.LogError("Failed to create virtualenv", err, "path", venvDir)
+	if len(packages) == 0 {
+		utils.LogError("No package definition found", nil, "os", osID, "version", version)
+		return fmt.Errorf("no package definition found for %s %s", osID, version)
+	}
+
+	// Install system packages
+	utils.LogInfo("Installing system packages for virtual environment", "packages", packages)
+	if err := utils.InstallPackages(packages); err != nil {
+		utils.LogError("Failed to install system packages", err, "packages", packages)
+		return fmt.Errorf("failed to install system packages: %v", err)
+	}
+
+	// Determine Python command based on OS
+	var pythonCmd string
+	switch osID {
+	case "rhel":
+		switch version {
+		case "7":
+			pythonCmd = "/opt/rh/rh-python38/root/usr/bin/python3"
+		case "8":
+			pythonCmd = "/usr/bin/python3.9"
+		case "9":
+			pythonCmd = "/usr/bin/python3.12"
+		default:
+			pythonCmd = "/usr/bin/python3"
+		}
+	case "opensuse-leap":
+		pythonCmd = "/usr/bin/python3.11"
+	default:
+		pythonCmd = "/usr/bin/python3"
+	}
+
+	utils.LogCommand(pythonCmd, "-m", "venv", venvDir)
+	if err := utils.RunCommand(pythonCmd, "-m", "venv", venvDir); err != nil {
+		utils.LogError("Failed to create virtualenv", err, "path", venvDir, "python_cmd", pythonCmd)
 		return fmt.Errorf("failed to create virtualenv: %v", err)
 	}
 
@@ -155,22 +192,57 @@ func createVirtualEnvironment(venvDir string) error {
 	utils.LogInfo("Creating Python virtual environment", "path", venvDir)
 	fmt.Println("Creating Python virtual environment...")
 
-	if err := utils.InstallPackages([]string{"python3", "python3-venv"}); err != nil {
-		utils.LogError("Failed to install python3", err)
-		return fmt.Errorf("failed to install python3: %v", err)
+	// Detect OS to get the correct packages
+	osID, version, err := system.DetectOS()
+	if err != nil {
+		utils.LogError("Failed to detect OS", err)
+		return fmt.Errorf("failed to detect OS: %v", err)
 	}
 
-	if _, err := os.Stat(venvDir); os.IsNotExist(err) {
-		if err := utils.InstallPackages([]string{"python3-venv"}); err != nil {
-			utils.LogError("Failed to install python3-venv", err)
-			return fmt.Errorf("failed to venv package missing: %v", err)
+	// Find packages for this OS
+	var packages []string
+	for _, pkg := range system.DependenciePackages {
+		if pkg.OSID == osID && pkg.Version == version {
+			packages = pkg.Packages
+			break
 		}
 	}
 
-	cmd := filepath.Join("/usr/bin", "python3")
-	utils.LogCommand(cmd, "-m", "venv", venvDir)
-	if err := utils.RunCommand(cmd, "-m", "venv", venvDir); err != nil {
-		utils.LogError("Failed to create virtualenv", err, "path", venvDir)
+	if len(packages) == 0 {
+		utils.LogError("No package definition found", nil, "os", osID, "version", version)
+		return fmt.Errorf("no package definition found for %s %s", osID, version)
+	}
+
+	// Install system packages
+	utils.LogInfo("Installing system packages for virtual environment", "packages", packages)
+	if err := utils.InstallPackages(packages); err != nil {
+		utils.LogError("Failed to install system packages", err, "packages", packages)
+		return fmt.Errorf("failed to install system packages: %v", err)
+	}
+
+	// Determine Python command based on OS
+	var pythonCmd string
+	switch osID {
+	case "rhel":
+		switch version {
+		case "7":
+			pythonCmd = "/opt/rh/rh-python38/root/usr/bin/python3"
+		case "8":
+			pythonCmd = "/usr/bin/python3.9"
+		case "9":
+			pythonCmd = "/usr/bin/python3.12"
+		default:
+			pythonCmd = "/usr/bin/python3"
+		}
+	case "opensuse-leap":
+		pythonCmd = "/usr/bin/python3.11"
+	default:
+		pythonCmd = "/usr/bin/python3"
+	}
+
+	utils.LogCommand(pythonCmd, "-m", "venv", venvDir)
+	if err := utils.RunCommand(pythonCmd, "-m", "venv", venvDir); err != nil {
+		utils.LogError("Failed to create virtualenv", err, "path", venvDir, "python_cmd", pythonCmd)
 		return fmt.Errorf("failed to create virtualenv: %v", err)
 	}
 
