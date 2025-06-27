@@ -31,18 +31,51 @@ func DownloadRequirements(requirements []string, downloadPath string) error {
 		return fmt.Errorf("failed to create requirements.txt: %v", err)
 	}
 
+	LogInfo("Created requirements.txt", "file", requirementsFile, "content", requirementsContent)
+
+	// Check if pip is available
+	if _, err := exec.LookPath("pip"); err != nil {
+		LogError("pip not found in PATH", err)
+		return fmt.Errorf("pip not found in PATH: %v", err)
+	}
+
 	// Download packages using pip
 	LogCommand("pip", "download", "-r", requirementsFile, "-d", downloadPath)
 	cmd := exec.Command("pip", "download", "-r", requirementsFile, "-d", downloadPath)
-	cmd.Stdout = nil
-	cmd.Stderr = nil
 
-	if err := cmd.Run(); err != nil {
-		LogError("Failed to download requirements", err, "requirements", requirements, "path", downloadPath)
-		return fmt.Errorf("failed to download requirements: %v", err)
+	// Capture output for debugging
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		LogError("Failed to download requirements", err, "requirements", requirements, "path", downloadPath, "output", string(output))
+		return fmt.Errorf("failed to download requirements: %v, output: %s", err, string(output))
 	}
 
-	LogInfo("Requirements downloaded successfully", "path", downloadPath, "requirements", requirements)
+	LogInfo("pip download completed", "output", string(output))
+
+	// Verify that packages were downloaded
+	entries, err := os.ReadDir(downloadPath)
+	if err != nil {
+		LogError("Failed to read download directory", err, "path", downloadPath)
+		return fmt.Errorf("failed to read download directory: %v", err)
+	}
+
+	packageCount := 0
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			name := entry.Name()
+			if strings.HasSuffix(name, ".whl") || strings.HasSuffix(name, ".tar.gz") || strings.HasSuffix(name, ".tgz") {
+				packageCount++
+				LogInfo("Downloaded package", "name", name)
+			}
+		}
+	}
+
+	if packageCount == 0 {
+		LogError("No packages were downloaded", nil, "path", downloadPath, "entries", len(entries))
+		return fmt.Errorf("no packages were downloaded to %s", downloadPath)
+	}
+
+	LogInfo("Requirements downloaded successfully", "path", downloadPath, "requirements", requirements, "packages", packageCount)
 	return nil
 }
 

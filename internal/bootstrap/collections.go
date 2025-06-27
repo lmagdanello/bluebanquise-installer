@@ -25,27 +25,8 @@ func InstallCollectionsOnline(userHome string) error {
 	collectionsDir := filepath.Join(userHome, ".ansible", "collections")
 
 	// Verify ansible-galaxy exists, create environment if it doesn't
-	if _, err := os.Stat(ansibleGalaxy); os.IsNotExist(err) {
-		utils.LogInfo("ansible-galaxy not found, creating environment", "path", ansibleGalaxy)
-		fmt.Println("Creating Python environment for collections installation...")
-
-		// Create virtual environment
-		if err := createVirtualEnvironment(venvDir); err != nil {
-			return fmt.Errorf("failed to create virtual environment: %v", err)
-		}
-
-		// Install requirements to get ansible-galaxy
-		utils.LogInfo("Installing Python requirements for ansible-galaxy", "requirements", system.PythonRequirements)
-		if err := utils.InstallRequirements(venvDir, system.PythonRequirements); err != nil {
-			utils.LogError("Failed to install Python packages", err, "venv", venvDir)
-			return fmt.Errorf("failed to install Python packages: %v", err)
-		}
-
-		// Verify ansible-galaxy exists now
-		if _, err := os.Stat(ansibleGalaxy); os.IsNotExist(err) {
-			utils.LogError("ansible-galaxy still not found after environment setup", err, "path", ansibleGalaxy)
-			return fmt.Errorf("ansible-galaxy not found at %s after environment setup: %v", ansibleGalaxy, err)
-		}
+	if err := ensureAnsibleGalaxy(venvDir, ansibleGalaxy); err != nil {
+		return err
 	}
 
 	// Create collections directory if it doesn't exist.
@@ -87,27 +68,8 @@ func InstallCollectionsFromPath(path, userHome string) error {
 	collectionsDir := filepath.Join(userHome, ".ansible", "collections")
 
 	// Verify ansible-galaxy exists, create environment if it doesn't
-	if _, err := os.Stat(ansibleGalaxy); os.IsNotExist(err) {
-		utils.LogInfo("ansible-galaxy not found, creating environment", "path", ansibleGalaxy)
-		fmt.Println("Creating Python environment for collections installation...")
-
-		// Create virtual environment
-		if err := createVirtualEnvironment(venvDir); err != nil {
-			return fmt.Errorf("failed to create virtual environment: %v", err)
-		}
-
-		// Install requirements to get ansible-galaxy
-		utils.LogInfo("Installing Python requirements for ansible-galaxy", "requirements", system.PythonRequirements)
-		if err := utils.InstallRequirements(venvDir, system.PythonRequirements); err != nil {
-			utils.LogError("Failed to install Python packages", err, "venv", venvDir)
-			return fmt.Errorf("failed to install Python packages: %v", err)
-		}
-
-		// Verify ansible-galaxy exists now
-		if _, err := os.Stat(ansibleGalaxy); os.IsNotExist(err) {
-			utils.LogError("ansible-galaxy still not found after environment setup", err, "path", ansibleGalaxy)
-			return fmt.Errorf("ansible-galaxy not found at %s after environment setup: %v", ansibleGalaxy, err)
-		}
+	if err := ensureAnsibleGalaxy(venvDir, ansibleGalaxy); err != nil {
+		return err
 	}
 
 	// Create collections directory if it doesn't exist.
@@ -311,4 +273,31 @@ func copyFile(src, dst string) error {
 
 	_, err = io.Copy(destFile, sourceFile)
 	return err
+}
+
+// ensureAnsibleGalaxy ensures that ansible-galaxy is available in the virtual environment.
+func ensureAnsibleGalaxy(venvDir, ansibleGalaxy string) error {
+	if _, err := os.Stat(ansibleGalaxy); os.IsNotExist(err) {
+		utils.LogInfo("ansible-galaxy not found, creating environment", "path", ansibleGalaxy)
+		fmt.Println("Creating Python environment for collections installation...")
+
+		// Create virtual environment
+		if err := createVirtualEnvironment(venvDir); err != nil {
+			return fmt.Errorf("failed to create virtual environment: %v", err)
+		}
+
+		// Install requirements to get ansible-galaxy
+		utils.LogInfo("Installing Python requirements for ansible-galaxy", "requirements", system.PythonRequirements)
+		if err := utils.InstallRequirements(venvDir, system.PythonRequirements); err != nil {
+			utils.LogError("Failed to install Python packages", err, "venv", venvDir)
+			return fmt.Errorf("failed to install Python packages: %v", err)
+		}
+
+		// Verify ansible-galaxy exists now
+		if _, err := os.Stat(ansibleGalaxy); os.IsNotExist(err) {
+			utils.LogError("ansible-galaxy still not found after environment setup", err, "path", ansibleGalaxy)
+			return fmt.Errorf("ansible-galaxy not found at %s after environment setup: %v", ansibleGalaxy, err)
+		}
+	}
+	return nil
 }

@@ -43,6 +43,7 @@ jobs:
   test-online-installation:
     name: Online Installation Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix:
         distribution: [ubuntu-22.04, ubuntu-24.04, debian-12, rockylinux-9, opensuse-leap-15.5]
@@ -96,11 +97,17 @@ jobs:
             fi
           "
           
+          # Wait for dependencies to be fully installed
+          sleep 5
+          
           # Run online installation (as root in container)
           docker exec $CONTAINER_NAME bash -c "
             cd /installer
             ./bluebanquise-installer online --user testuser --home /tmp/bluebanquise
           "
+          
+          # Wait for installation to complete and any background processes
+          sleep 10
                     
           # Cleanup
           docker stop $CONTAINER_NAME
@@ -110,6 +117,7 @@ jobs:
   test-offline-installation:
     name: Offline Installation Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix:
         distribution: [ubuntu-22.04, rockylinux-9]
@@ -155,6 +163,9 @@ jobs:
             fi
           "
           
+          # Wait for dependencies to be fully installed
+          sleep 5
+          
           # Download collections, requirements and core-vars in the test container
           docker exec $CONTAINER_NAME bash -c "
             cd /installer
@@ -163,6 +174,9 @@ jobs:
             ./bluebanquise-installer download --path /tmp/offline-packages/requirements --requirements
             ./bluebanquise-installer download --path /tmp/offline-packages/core-vars --core-vars
           "
+          
+          # Wait for downloads to complete
+          sleep 5
           
           # Run offline installation (as root in container)
           docker exec $CONTAINER_NAME bash -c "
@@ -176,7 +190,7 @@ jobs:
           "
           
           # Wait a moment for any background processes to complete
-          sleep 5
+          sleep 10
           
           # Verify installation success
           docker exec $CONTAINER_NAME bash -c "
@@ -194,6 +208,7 @@ jobs:
   test-tarball-installation:
     name: Tarball Installation Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -224,12 +239,18 @@ jobs:
             apt-get update && apt-get install -y python3 python3-pip python3-venv git curl
           "
           
+          # Wait for dependencies to be fully installed
+          sleep 5
+          
           # Download tarballs in the test container
           docker exec test-tarball bash -c "
             cd /installer
             mkdir -p /tmp/tarball-packages
             ./bluebanquise-installer download --path /tmp/tarball-packages --tarball
           "
+          
+          # Wait for downloads to complete
+          sleep 5
           
           # Run installation with tarballs (as root in container)
           docker exec test-tarball bash -c "
@@ -241,7 +262,7 @@ jobs:
           "
           
           # Wait a moment for any background processes to complete
-          sleep 5
+          sleep 10
           
           # Verify installation success
           docker exec test-tarball bash -c "
