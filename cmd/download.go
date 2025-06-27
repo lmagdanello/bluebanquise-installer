@@ -127,8 +127,8 @@ func downloadPythonRequirements() {
 func downloadCollections() {
 	utils.LogInfo("Downloading collections to directory", "path", downloadPath)
 
-	// Create temporary Python environment
-	tempVenv := filepath.Join(downloadPath, "temp_venv")
+	// Create temporary Python environment outside download directory
+	tempVenv := filepath.Join(os.TempDir(), "bluebanquise_download_venv")
 	if err := utils.RunCommand("/usr/bin/python3", "-m", "venv", tempVenv); err != nil {
 		utils.LogError("Error creating temporary virtual environment", err, "path", tempVenv)
 		fmt.Printf("Error creating temporary virtual environment: %v\n", err)
@@ -187,8 +187,8 @@ func downloadCollections() {
 func downloadTarballs() {
 	utils.LogInfo("Downloading tarballs", "path", downloadPath)
 
-	// Create temporary Python environment
-	tempVenv := filepath.Join(downloadPath, "temp_venv")
+	// Create temporary Python environment outside download directory
+	tempVenv := filepath.Join(os.TempDir(), "bluebanquise_download_venv")
 	if err := utils.RunCommand("/usr/bin/python3", "-m", "venv", tempVenv); err != nil {
 		utils.LogError("Error creating temporary virtual environment", err, "path", tempVenv)
 		fmt.Printf("Error creating temporary virtual environment: %v\n", err)

@@ -23,6 +23,12 @@ func InstallCollectionsOnline(userHome string) error {
 	ansibleGalaxy := filepath.Join(venvBin, "ansible-galaxy")
 	collectionsDir := filepath.Join(userHome, ".ansible", "collections")
 
+	// Verify ansible-galaxy exists
+	if _, err := os.Stat(ansibleGalaxy); os.IsNotExist(err) {
+		utils.LogError("ansible-galaxy not found", err, "path", ansibleGalaxy)
+		return fmt.Errorf("ansible-galaxy not found at %s: %v", ansibleGalaxy, err)
+	}
+
 	// Create collections directory if it doesn't exist.
 	if err := os.MkdirAll(collectionsDir, 0755); err != nil {
 		utils.LogError("Failed to create collections directory", err, "path", collectionsDir)
@@ -60,6 +66,13 @@ func InstallCollectionsFromPath(path, userHome string) error {
 	venvBin := filepath.Join(venvDir, "bin")
 	ansibleGalaxy := filepath.Join(venvBin, "ansible-galaxy")
 	collectionsDir := filepath.Join(userHome, ".ansible", "collections")
+
+	// Verify ansible-galaxy exists
+	if _, err := os.Stat(ansibleGalaxy); os.IsNotExist(err) {
+		utils.LogError("ansible-galaxy not found", err, "path", ansibleGalaxy)
+		return fmt.Errorf("ansible-galaxy not found at %s: %v", ansibleGalaxy, err)
+	}
+
 	// Create collections directory if it doesn't exist.
 	if err := os.MkdirAll(collectionsDir, 0755); err != nil {
 		utils.LogError("Failed to create collections directory", err, "path", collectionsDir)

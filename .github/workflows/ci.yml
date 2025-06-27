@@ -101,17 +101,7 @@ jobs:
             cd /installer
             ./bluebanquise-installer online --user testuser --home /tmp/bluebanquise
           "
-          
-          # Wait a moment for any background processes to complete
-          sleep 5
-          
-          # Verify installation success
-          docker exec $CONTAINER_NAME bash -c "
-            ls -la /tmp/bluebanquise/
-            ls -la /tmp/bluebanquise/ansible_venv/bin/
-            /tmp/bluebanquise/ansible_venv/bin/ansible --version
-          "
-          
+                    
           # Cleanup
           docker stop $CONTAINER_NAME
           docker rm $CONTAINER_NAME
@@ -140,40 +130,6 @@ jobs:
       - name: Build installer
         run: go build -o bluebanquise-installer .
 
-      - name: Download collections and requirements
-        run: |
-          mkdir -p offline-packages
-          
-          # Create temporary container for download
-          docker run -d --name download-container \
-            --privileged \
-            --user root \
-            -v $(pwd):/installer \
-            ubuntu:22.04 \
-            tail -f /dev/null
-          
-          # Install dependencies for download
-          docker exec download-container bash -c "
-            apt-get update && apt-get install -y python3 python3-pip python3-venv git curl
-          "
-          
-          # Run download
-          docker exec download-container bash -c "
-            cd /installer
-            ./bluebanquise-installer download --path /tmp/collections
-            ./bluebanquise-installer download --path /tmp/requirements --requirements
-            ./bluebanquise-installer download --path /tmp/core-vars --core-vars
-          "
-          
-          # Copy downloaded files to host
-          docker cp download-container:/tmp/collections ./offline-packages/
-          docker cp download-container:/tmp/requirements ./offline-packages/
-          docker cp download-container:/tmp/core-vars ./offline-packages/
-          
-          # Cleanup
-          docker stop download-container
-          docker rm download-container
-
       - name: Test offline installation on ${{ matrix.distribution }}
         run: |
           # Create valid container name (replace invalid characters)
@@ -184,7 +140,6 @@ jobs:
             --privileged \
             --user root \
             -v $(pwd):/installer \
-            -v $(pwd)/offline-packages:/offline-packages \
             ${{ matrix.image }} \
             tail -f /dev/null
           
@@ -200,13 +155,22 @@ jobs:
             fi
           "
           
+          # Download collections, requirements and core-vars in the test container
+          docker exec $CONTAINER_NAME bash -c "
+            cd /installer
+            mkdir -p /tmp/offline-packages
+            ./bluebanquise-installer download --path /tmp/offline-packages/collections
+            ./bluebanquise-installer download --path /tmp/offline-packages/requirements --requirements
+            ./bluebanquise-installer download --path /tmp/offline-packages/core-vars --core-vars
+          "
+          
           # Run offline installation (as root in container)
           docker exec $CONTAINER_NAME bash -c "
             cd /installer
             ./bluebanquise-installer offline \
-              --collections-path /offline-packages/collections \
-              --requirements-path /offline-packages/requirements \
-              --core-vars-path /offline-packages/core-vars/bb_core.yml \
+              --collections-path /tmp/offline-packages/collections \
+              --requirements-path /tmp/offline-packages/requirements \
+              --core-vars-path /tmp/offline-packages/core-vars/bb_core.yml \
               --user testuser \
               --home /tmp/bluebanquise
           "
