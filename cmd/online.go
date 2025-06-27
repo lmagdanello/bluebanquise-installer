@@ -136,7 +136,7 @@ var onlineCmd = &cobra.Command{
 
 func init() {
 	onlineCmd.Flags().StringVarP(&onlineUserName, "user", "u", "bluebanquise", "Username for BlueBanquise")
-	onlineCmd.Flags().StringVarP(&onlineUserHome, "home", "h", "/var/lib/bluebanquise", "Home directory for BlueBanquise user")
+	onlineCmd.Flags().StringVarP(&onlineUserHome, "home", "H", "/var/lib/bluebanquise", "Home directory for BlueBanquise user")
 	onlineCmd.Flags().BoolVarP(&onlineSkipEnvironment, "skip-environment", "e", false, "Skip environment configuration")
 	onlineCmd.Flags().BoolVarP(&onlineDebug, "debug", "d", false, "Enable debug mode")
 

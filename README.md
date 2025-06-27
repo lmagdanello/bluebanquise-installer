@@ -89,7 +89,7 @@ sudo ./bluebanquise-installer offline \
 - `--requirements-path, -r`: Path to Python requirements for offline installation
 - `--core-vars-path, -v`: Path to core variables (bb_core.yml) for offline installation
 - `--user, -u`: BlueBanquise username (default: bluebanquise)
-- `--home, -h`: User home directory (default: /var/lib/bluebanquise)
+- `--home, -H`: User home directory (default: /var/lib/bluebanquise)
 - `--skip-environment, -e`: Skip environment configuration
 - `--debug, -d`: Enable debug mode
 

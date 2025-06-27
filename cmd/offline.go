@@ -205,7 +205,7 @@ func init() {
 	offlineCmd.Flags().StringVarP(&requirementsPath, "requirements-path", "r", "", "Path to Python requirements for offline installation")
 	offlineCmd.Flags().StringVarP(&coreVarsPath, "core-vars-path", "v", "", "Path to core variables for offline installation")
 	offlineCmd.Flags().StringVarP(&userName, "user", "u", "bluebanquise", "Username for BlueBanquise")
-	offlineCmd.Flags().StringVarP(&userHome, "home", "h", "/var/lib/bluebanquise", "Home directory for BlueBanquise user")
+	offlineCmd.Flags().StringVarP(&userHome, "home", "H", "/var/lib/bluebanquise", "Home directory for BlueBanquise user")
 	offlineCmd.Flags().BoolVarP(&offlineSkipEnvironment, "skip-environment", "e", false, "Skip environment configuration")
 	offlineCmd.Flags().BoolVarP(&offlineDebug, "debug", "d", false, "Enable debug mode")
 
