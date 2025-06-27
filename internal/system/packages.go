@@ -1,7 +1,5 @@
 package system
 
-import "github.com/lmagdanello/bluebanquise-installer/internal/utils"
-
 var PythonRequirements = []string{
 	"ansible",
 	"ansible-core",
@@ -45,7 +43,7 @@ var DependenciePackages = []PackageDefinition{
 			"libsqlite3-dev", "wget", "libbz2-dev", "pkg-config", "ssh",
 			"curl", "git",
 		},
-		PostHook: utils.BuildPython311FromSource,
+		PostHook: BuildPython311FromSource,
 	},
 	{
 		OSID:    "rhel",
@@ -89,7 +87,7 @@ var DependenciePackages = []PackageDefinition{
 		Packages: []string{
 			"python3", "python3-pip", "python311", "python311-pip", "git", "openssh", "curl",
 		},
-		PostHook: utils.LinkPython311AsDefault,
+		PostHook: LinkPython311AsDefault,
 	},
 	{
 		OSID:    "opensuse-leap",
@@ -97,6 +95,6 @@ var DependenciePackages = []PackageDefinition{
 		Packages: []string{
 			"python3", "python3-pip", "python311", "python311-pip", "git", "openssh", "curl",
 		},
-		PostHook: utils.LinkPython311AsDefault,
+		PostHook: LinkPython311AsDefault,
 	},
 }

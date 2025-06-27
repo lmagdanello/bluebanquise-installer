@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/lmagdanello/bluebanquise-installer/internal/system"
 )
 
 // DownloadRequirements downloads Python packages without installing them.
@@ -33,15 +35,16 @@ func DownloadRequirements(requirements []string, downloadPath string) error {
 
 	LogInfo("Created requirements.txt", "file", requirementsFile, "content", requirementsContent)
 
-	// Check if Python3 is available and use python3 -m pip
-	if _, err := exec.LookPath("python3"); err != nil {
-		LogError("python3 not found in PATH", err)
-		return fmt.Errorf("python3 not found in PATH: %v", err)
+	// Get the correct Python command for this OS
+	pythonCmd, err := system.GetPythonCommand()
+	if err != nil {
+		LogError("Failed to get Python command", err)
+		return fmt.Errorf("failed to get Python command: %v", err)
 	}
 
-	// Download packages using python3 -m pip
-	LogCommand("python3", "-m", "pip", "download", "-r", requirementsFile, "-d", downloadPath)
-	cmd := exec.Command("python3", "-m", "pip", "download", "-r", requirementsFile, "-d", downloadPath)
+	// Download packages using the OS-specific Python
+	LogCommand(pythonCmd, "-m", "pip", "download", "-r", requirementsFile, "-d", downloadPath)
+	cmd := exec.Command(pythonCmd, "-m", "pip", "download", "-r", requirementsFile, "-d", downloadPath)
 
 	// Capture output for debugging
 	output, err := cmd.CombinedOutput()
@@ -110,12 +113,18 @@ func InstallRequirementsOffline(venvPath, requirementsPath string) error {
 		}
 	}
 
-	// Install packages from local directory using python3 -m pip
+	// Install packages from local directory using the OS-specific Python
+	pythonCmd, err := system.GetPythonCommand()
+	if err != nil {
+		LogError("Failed to get Python command", err)
+		return fmt.Errorf("failed to get Python command: %v", err)
+	}
+
 	args := []string{"-m", "pip", "install", "--no-index", "--find-links", requirementsPath, "-r", requirementsFile}
 
 	fmt.Printf("Installing Python packages from local directory: %s\n", requirementsPath)
-	LogCommand("python3", args...)
-	cmd := exec.Command("python3", args...)
+	LogCommand(pythonCmd, args...)
+	cmd := exec.Command(pythonCmd, args...)
 
 	// Capture output for debugging
 	output, err := cmd.CombinedOutput()
@@ -187,66 +196,5 @@ func ExportRHPython38(userHome string) error {
 	}
 
 	LogInfo("RHEL7 Python 3.8 environment exported successfully", "home", userHome)
-	return nil
-}
-
-// Ubuntu 20.04.
-func BuildPython311FromSource() error {
-	LogInfo("Building Python 3.11 from source for Ubuntu 20.04")
-	fmt.Println("Building Python 3.11 from source...")
-
-	cmds := [][]string{
-		{"wget", "https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tgz"},
-		{"tar", "-xf", "Python-3.11.4.tgz"},
-		{"bash", "-c", "cd Python-3.11.4 && ./configure --enable-optimizations --with-ensurepip=install"},
-		{"bash", "-c", "cd Python-3.11.4 && make -j"},
-		{"bash", "-c", "cd Python-3.11.4 && make altinstall"},
-		{"update-alternatives", "--install", "/usr/bin/python3", "python3", "/usr/local/bin/python3.11", "3"},
-		{"update-alternatives", "--install", "/usr/bin/python", "python", "/usr/local/bin/python3.11", "3"},
-		{"update-alternatives", "--install", "/usr/bin/pip3", "pip3", "/usr/local/bin/pip3.11", "3"},
-		{"update-alternatives", "--install", "/usr/bin/pip", "pip", "/usr/local/bin/pip3.11", "3"},
-	}
-
-	for i, args := range cmds {
-		LogCommand(args[0], args[1:]...)
-		cmd := exec.Command(args[0], args[1:]...)
-		cmd.Stdout = nil
-		cmd.Stderr = nil
-		if err := cmd.Run(); err != nil {
-			LogError("Failed to execute Python build command", err, "step", i+1, "command", args)
-			return fmt.Errorf("failed to execute command: %v", args)
-		}
-		LogInfo("Python build step completed", "step", i+1, "command", args)
-	}
-
-	LogInfo("Python 3.11 built from source successfully")
-	return nil
-}
-
-// OpenSUSE.
-func LinkPython311AsDefault() error {
-	LogInfo("Linking python3.11 as default in OpenSUSE")
-	fmt.Println("Linking python3.11 as default in opensuse...")
-
-	cmds := [][]string{
-		{"update-alternatives", "--install", "/usr/bin/python3", "python3", "/usr/bin/python3.11", "3"},
-		{"update-alternatives", "--install", "/usr/bin/python", "python", "/usr/bin/python3.11", "3"},
-		{"update-alternatives", "--install", "/usr/bin/pip3", "pip3", "/usr/bin/pip3.11", "3"},
-		{"update-alternatives", "--install", "/usr/bin/pip", "pip", "/usr/bin/pip3.11", "3"},
-	}
-
-	for i, args := range cmds {
-		LogCommand(args[0], args[1:]...)
-		cmd := exec.Command(args[0], args[1:]...)
-		cmd.Stdout = nil
-		cmd.Stderr = nil
-		if err := cmd.Run(); err != nil {
-			LogError("Failed to link python3.11", err, "step", i+1, "command", args)
-			return fmt.Errorf("failed to link python3.11: %v", err)
-		}
-		LogInfo("Python link step completed", "step", i+1, "command", args)
-	}
-
-	LogInfo("Python 3.11 linked as default successfully")
 	return nil
 }

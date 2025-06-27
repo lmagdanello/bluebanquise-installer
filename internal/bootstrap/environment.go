@@ -80,7 +80,7 @@ func ConfigureEnvironment(userName, userHome, collectionsPath string) error {
 		case "9":
 			pythonCmd = "/usr/bin/python3.12"
 		default:
-			pythonCmd = defaultPythonCmd
+			pythonCmd = "/usr/bin/python3"
 		}
 	case "opensuse-leap":
 		pythonCmd = "/usr/bin/python3.11"
