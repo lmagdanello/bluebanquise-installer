@@ -1,0 +1,61 @@
+# Binaries
+bluebanquise-installer
+bluebanquise-installer-*
+
+# Build and release artifacts
+/release/
+/coverage.out
+/coverage.html
+/security-results.json
+/licenses.csv
+
+# Test output and temp files
+*.test
+*.log
+*.tmp
+*.swp
+
+# IDE/editor configs
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python virtualenvs (caso use para testes)
+venv/
+.venv/
+
+# Docker artifacts
+offline-packages/
+tarball-packages/
+
+# Pre-commit
+.pre-commit-config.yaml
+.pre-commit/
+
+# Dependency directories
+vendor/
+
+# Go modules
+/go.sum
+
+# GitHub workflows artifacts
+*.sarif
+
+# Misc
+*.bak
+*.old
+
+# Ignore local env files
+.env
+.env.*
+
+# Ignore test coverage for Codecov
+codecov.yml
+
+# Ignore user-specific files
+*.local 

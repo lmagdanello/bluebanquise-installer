@@ -1,0 +1,353 @@
+name: BlueBanquise Installer CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  # Unit tests and linting
+  test:
+    name: Unit Tests & Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run unit tests
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          args: --timeout=5m
+
+      - name: Build binary
+        run: go build -o bluebanquise-installer .
+
+  # Online installation tests
+  test-online-installation:
+    name: Online Installation Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distribution: [ubuntu-22.04, ubuntu-24.04, debian-12, rhel-9, opensuse-leap-15.5]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Build installer
+        run: go build -o bluebanquise-installer .
+
+      - name: Test online installation on ${{ matrix.distribution }}
+        run: |
+          # Create distribution container
+          docker run -d --name test-${{ matrix.distribution }} \
+            --privileged \
+            -v $(pwd):/installer \
+            ${{ matrix.distribution }}:latest \
+            tail -f /dev/null
+          
+          # Wait for container to be ready
+          sleep 10
+          
+          # Run online installation
+          docker exec test-${{ matrix.distribution }} bash -c "
+            cd /installer
+            sudo ./bluebanquise-installer online --user testuser --home /tmp/bluebanquise
+          "
+          
+          # Verify installation success
+          docker exec test-${{ matrix.distribution }} bash -c "
+            ls -la /tmp/bluebanquise/
+            ls -la /tmp/bluebanquise/ansible_venv/bin/
+            /tmp/bluebanquise/ansible_venv/bin/ansible --version
+          "
+          
+          # Cleanup
+          docker stop test-${{ matrix.distribution }}
+          docker rm test-${{ matrix.distribution }}
+
+  # Offline installation tests
+  test-offline-installation:
+    name: Offline Installation Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distribution: [ubuntu-22.04, rhel-9]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Build installer
+        run: go build -o bluebanquise-installer .
+
+      - name: Download collections and requirements
+        run: |
+          # Create temporary container for download
+          docker run -d --name download-container \
+            --privileged \
+            -v $(pwd):/installer \
+            ubuntu:22.04 \
+            tail -f /dev/null
+          
+          # Install dependencies for download
+          docker exec download-container bash -c "
+            apt-get update && apt-get install -y python3 python3-pip python3-venv git curl
+          "
+          
+          # Run download
+          docker exec download-container bash -c "
+            cd /installer
+            ./bluebanquise-installer download --path /tmp/collections
+            ./bluebanquise-installer download --path /tmp/requirements --requirements
+            ./bluebanquise-installer download --path /tmp/core-vars --core-vars
+          "
+          
+          # Copy downloaded files to host
+          docker cp download-container:/tmp/collections ./offline-packages/
+          docker cp download-container:/tmp/requirements ./offline-packages/
+          docker cp download-container:/tmp/core-vars ./offline-packages/
+          
+          # Cleanup
+          docker stop download-container
+          docker rm download-container
+
+      - name: Test offline installation on ${{ matrix.distribution }}
+        run: |
+          # Create distribution container
+          docker run -d --name test-offline-${{ matrix.distribution }} \
+            --privileged \
+            -v $(pwd):/installer \
+            -v $(pwd)/offline-packages:/offline-packages \
+            ${{ matrix.distribution }}:latest \
+            tail -f /dev/null
+          
+          # Wait for container to be ready
+          sleep 10
+          
+          # Run offline installation
+          docker exec test-offline-${{ matrix.distribution }} bash -c "
+            cd /installer
+            sudo ./bluebanquise-installer offline \
+              --collections-path /offline-packages/collections \
+              --requirements-path /offline-packages/requirements \
+              --core-vars-path /offline-packages/core-vars/bb_core.yml \
+              --user testuser \
+              --home /tmp/bluebanquise
+          "
+          
+          # Verify installation success
+          docker exec test-offline-${{ matrix.distribution }} bash -c "
+            ls -la /tmp/bluebanquise/
+            ls -la /tmp/bluebanquise/ansible_venv/bin/
+            /tmp/bluebanquise/ansible_venv/bin/ansible --version
+            ls -la /tmp/bluebanquise/bluebanquise/inventory/group_vars/all/
+          "
+          
+          # Cleanup
+          docker stop test-offline-${{ matrix.distribution }}
+          docker rm test-offline-${{ matrix.distribution }}
+
+  # Tarball installation tests
+  test-tarball-installation:
+    name: Tarball Installation Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Build installer
+        run: go build -o bluebanquise-installer .
+
+      - name: Download tarballs
+        run: |
+          # Create temporary container for download
+          docker run -d --name tarball-download \
+            --privileged \
+            -v $(pwd):/installer \
+            ubuntu:22.04 \
+            tail -f /dev/null
+          
+          # Install dependencies for download
+          docker exec tarball-download bash -c "
+            apt-get update && apt-get install -y python3 python3-pip python3-venv git curl
+          "
+          
+          # Run tarball download
+          docker exec tarball-download bash -c "
+            cd /installer
+            ./bluebanquise-installer download --path /tmp/tarballs --tarball
+          "
+          
+          # Copy tarballs to host
+          docker cp tarball-download:/tmp/tarballs ./tarball-packages/
+          
+          # Cleanup
+          docker stop tarball-download
+          docker rm tarball-download
+
+      - name: Test tarball installation
+        run: |
+          # Create Ubuntu container for test
+          docker run -d --name test-tarball \
+            --privileged \
+            -v $(pwd):/installer \
+            -v $(pwd)/tarball-packages:/tarball-packages \
+            ubuntu:22.04 \
+            tail -f /dev/null
+          
+          # Wait for container to be ready
+          sleep 10
+          
+          # Run installation with tarballs
+          docker exec test-tarball bash -c "
+            cd /installer
+            sudo ./bluebanquise-installer offline \
+              --tarball-path /tarball-packages \
+              --user testuser \
+              --home /tmp/bluebanquise
+          "
+          
+          # Verify installation success
+          docker exec test-tarball bash -c "
+            ls -la /tmp/bluebanquise/
+            ls -la /tmp/bluebanquise/ansible_venv/bin/
+            /tmp/bluebanquise/ansible_venv/bin/ansible --version
+          "
+          
+          # Cleanup
+          docker stop test-tarball
+          docker rm test-tarball
+
+  # Different architectures tests
+  test-architectures:
+    name: Architecture Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Build for ${{ matrix.arch }}
+        run: |
+          GOOS=linux GOARCH=${{ matrix.arch }} go build -o bluebanquise-installer-${{ matrix.arch }} .
+
+      - name: Test binary on ${{ matrix.arch }}
+        run: |
+          # Create container with specific architecture
+          docker run --rm --platform linux/${{ matrix.arch }} \
+            -v $(pwd):/installer \
+            ubuntu:22.04 \
+            bash -c "
+              cd /installer
+              chmod +x bluebanquise-installer-${{ matrix.arch }}
+              ./bluebanquise-installer-${{ matrix.arch }} --help
+            "
+
+  # Complete integration tests
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Build installer
+        run: go build -o bluebanquise-installer .
+
+      - name: Run integration tests
+        run: |
+          # Run integration tests
+          go test -v -tags=integration ./...
+          
+          # Test basic commands
+          ./bluebanquise-installer --help
+          ./bluebanquise-installer status --help
+          ./bluebanquise-installer online --help
+          ./bluebanquise-installer offline --help
+          ./bluebanquise-installer download --help
+
+  # Build and release
+  build-release:
+    name: Build Release
+    runs-on: ubuntu-latest
+    needs: [test, test-online-installation, test-offline-installation, test-tarball-installation, test-architectures, test-integration]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Build for multiple platforms
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o bluebanquise-installer-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o bluebanquise-installer-linux-arm64 .
+          GOOS=darwin GOARCH=amd64 go build -o bluebanquise-installer-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -o bluebanquise-installer-darwin-arm64 .
+
+      - name: Create release assets
+        run: |
+          mkdir -p release
+          cp bluebanquise-installer-* release/
+          cp README.md release/
+          cp LICENSE release/ 2>/dev/null || echo "No LICENSE file found"
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: bluebanquise-installer-release
+          path: release/ 

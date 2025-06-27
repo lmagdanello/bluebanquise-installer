@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Build for multiple platforms
+        run: |
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bluebanquise-installer-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bluebanquise-installer-linux-arm64 .
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bluebanquise-installer-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o bluebanquise-installer-darwin-arm64 .
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bluebanquise-installer-windows-amd64.exe .
+          GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o bluebanquise-installer-windows-arm64.exe .
+
+      - name: Create checksums
+        run: |
+          sha256sum bluebanquise-installer-* > checksums.txt
+
+      - name: Create release assets
+        run: |
+          mkdir -p release
+          cp bluebanquise-installer-* release/
+          cp checksums.txt release/
+          cp README.md release/
+          cp LICENSE release/ 2>/dev/null || echo "No LICENSE file found"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release/bluebanquise-installer-linux-amd64
+            release/bluebanquise-installer-linux-arm64
+            release/bluebanquise-installer-darwin-amd64
+            release/bluebanquise-installer-darwin-arm64
+            release/bluebanquise-installer-windows-amd64.exe
+            release/bluebanquise-installer-windows-arm64.exe
+            release/checksums.txt
+            release/README.md
+            release/LICENSE
+          draft: false
+          prerelease: false
+          generate_release_notes: true 
