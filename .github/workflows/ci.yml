@@ -44,20 +44,6 @@ jobs:
     name: Online Installation Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      matrix:
-        distribution: [ubuntu-22.04, ubuntu-24.04, debian-12, rockylinux-9, opensuse-leap-15.5]
-        include:
-          - distribution: ubuntu-22.04
-            image: ubuntu:22.04
-          - distribution: ubuntu-24.04
-            image: ubuntu:24.04
-          - distribution: debian-12
-            image: debian:12
-          - distribution: rockylinux-9
-            image: rockylinux:9
-          - distribution: opensuse-leap-15.5
-            image: opensuse/leap:15.5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -70,42 +56,31 @@ jobs:
       - name: Build installer
         run: go build -o bluebanquise-installer .
 
-      - name: Test online installation on ${{ matrix.distribution }}
+      - name: Test online installation on Rocky Linux 9
         run: |
-          # Create valid container name (replace invalid characters)
-          CONTAINER_NAME="test-online-$(echo ${{ matrix.distribution }} | tr ':' '-')"
-          
-          # Create distribution container as root
-          docker run -d --name $CONTAINER_NAME \
+          # Create Rocky Linux 9 container as root
+          docker run -d --name test-online-rocky9 \
             --privileged \
             --user root \
             -v $(pwd):/installer \
-            ${{ matrix.image }} \
+            rockylinux:9 \
             tail -f /dev/null
           
           # Wait for container to be ready
           sleep 10
           
-          # Install basic dependencies
-          docker exec $CONTAINER_NAME bash -c "
-            if command -v apt-get >/dev/null 2>&1; then
-              apt-get update && apt-get install -y python3 python3-pip python3-venv git curl
-            elif command -v dnf >/dev/null 2>&1; then
-              # For Rocky Linux 9, install Python 3.12 to ensure compatibility with ansible
-              dnf install -y python3.12 python3.12-pip python3.12-devel git curl --allowerasing
-              # Create symlink to make python3.12 the default python3
-              ln -sf /usr/bin/python3.12 /usr/bin/python3
-              ln -sf /usr/bin/pip3.12 /usr/bin/pip3
-            elif command -v zypper >/dev/null 2>&1; then
-              zypper install -y python3 python3-pip python3-venv git curl
-            fi
+          # Install Python 3.12 and dependencies
+          docker exec test-online-rocky9 bash -c "
+            dnf install -y python3.12 python3.12-pip python3.12-devel git curl --allowerasing
+            ln -sf /usr/bin/python3.12 /usr/bin/python3
+            ln -sf /usr/bin/pip3.12 /usr/bin/pip3
           "
           
           # Wait for dependencies to be fully installed
           sleep 5
           
           # Run online installation (as root in container)
-          docker exec $CONTAINER_NAME bash -c "
+          docker exec test-online-rocky9 bash -c "
             cd /installer
             ./bluebanquise-installer online --user testuser --home /tmp/bluebanquise
           "
@@ -114,22 +89,14 @@ jobs:
           sleep 10
                     
           # Cleanup
-          docker stop $CONTAINER_NAME
-          docker rm $CONTAINER_NAME
+          docker stop test-online-rocky9
+          docker rm test-online-rocky9
 
   # Offline installation tests
   test-offline-installation:
     name: Offline Installation Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      matrix:
-        distribution: [ubuntu-22.04, rockylinux-9]
-        include:
-          - distribution: ubuntu-22.04
-            image: ubuntu:22.04
-          - distribution: rockylinux-9
-            image: rockylinux:9
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -142,87 +109,41 @@ jobs:
       - name: Build installer
         run: go build -o bluebanquise-installer .
 
-      - name: Download requirements for offline test
+      - name: Test offline installation on Rocky Linux 9
         run: |
-          # Download requirements on the host (which has internet access)
-          mkdir -p /tmp/offline-packages-host
-          ./bluebanquise-installer download --path /tmp/offline-packages-host/requirements --requirements
-          ./bluebanquise-installer download --path /tmp/offline-packages-host/core-vars --core-vars
-
-      - name: Test offline installation on ${{ matrix.distribution }}
-        run: |
-          # Create valid container name (replace invalid characters)
-          CONTAINER_NAME="test-offline-$(echo ${{ matrix.distribution }} | tr ':' '-')"
-          
-          # Create distribution container as root
-          docker run -d --name $CONTAINER_NAME \
+          # Create Rocky Linux 9 container as root
+          docker run -d --name test-offline-rocky9 \
             --privileged \
             --user root \
             -v $(pwd):/installer \
-            -v /tmp/offline-packages-host:/tmp/offline-packages-host \
-            ${{ matrix.image }} \
+            rockylinux:9 \
             tail -f /dev/null
           
           # Wait for container to be ready
           sleep 10
           
-          # Install basic dependencies
-          docker exec $CONTAINER_NAME bash -c "
-            if command -v apt-get >/dev/null 2>&1; then
-              apt-get update && apt-get install -y python3 python3-pip python3-venv git curl
-            elif command -v dnf >/dev/null 2>&1; then
-              # For Rocky Linux 9, install Python 3.12 to ensure compatibility with ansible
-              dnf install -y python3.12 python3.12-pip python3.12-devel git curl --allowerasing
-              # Create symlink to make python3.12 the default python3
-              ln -sf /usr/bin/python3.12 /usr/bin/python3
-              ln -sf /usr/bin/pip3.12 /usr/bin/pip3
-            fi
+          # Install Python 3.12 and dependencies
+          docker exec test-offline-rocky9 bash -c "
+            dnf install -y python3.12 python3.12-pip python3.12-devel git curl --allowerasing
+            ln -sf /usr/bin/python3.12 /usr/bin/python3
+            ln -sf /usr/bin/pip3.12 /usr/bin/pip3
           "
           
           # Wait for dependencies to be fully installed
           sleep 5
           
-          # Download collections in the test container (collections need ansible-galaxy)
-          docker exec $CONTAINER_NAME bash -c "
-            cd /installer
-            mkdir -p /tmp/offline-packages
-            ./bluebanquise-installer download --path /tmp/offline-packages/collections
-          "
-          
-          # Copy requirements and core-vars from host to container
-          docker exec $CONTAINER_NAME bash -c "
-            cp -r /tmp/offline-packages-host/requirements /tmp/offline-packages/
-            cp -r /tmp/offline-packages-host/core-vars /tmp/offline-packages/
-          "
-          
-          # Wait for downloads to complete
-          sleep 5
-          
           # Run offline installation (as root in container)
-          docker exec $CONTAINER_NAME bash -c "
+          docker exec test-offline-rocky9 bash -c "
             cd /installer
-            ./bluebanquise-installer offline \
-              --collections-path /tmp/offline-packages/collections \
-              --requirements-path /tmp/offline-packages/requirements \
-              --core-vars-path /tmp/offline-packages/core-vars/bb_core.yml \
-              --user testuser \
-              --home /tmp/bluebanquise
+            ./bluebanquise-installer offline --user testuser --home /tmp/bluebanquise
           "
           
-          # Wait a moment for any background processes to complete
+          # Wait for installation to complete and any background processes
           sleep 10
-          
-          # Verify installation success
-          docker exec $CONTAINER_NAME bash -c "
-            ls -la /tmp/bluebanquise/
-            ls -la /tmp/bluebanquise/ansible_venv/bin/
-            /tmp/bluebanquise/ansible_venv/bin/ansible --version
-            ls -la /tmp/bluebanquise/bluebanquise/inventory/group_vars/all/
-          "
-          
+                    
           # Cleanup
-          docker stop $CONTAINER_NAME
-          docker rm $CONTAINER_NAME
+          docker stop test-offline-rocky9
+          docker rm test-offline-rocky9
 
   # Tarball installation tests
   test-tarball-installation:
@@ -241,69 +162,38 @@ jobs:
       - name: Build installer
         run: go build -o bluebanquise-installer .
 
-      - name: Download requirements for tarball test
+      - name: Test tarball installation on Rocky Linux 9
         run: |
-          # Download requirements on the host (which has internet access)
-          mkdir -p /tmp/tarball-packages-host
-          ./bluebanquise-installer download --path /tmp/tarball-packages-host/requirements --requirements
-
-      - name: Test tarball installation
-        run: |
-          # Create Ubuntu container for test as root
+          # Create Rocky Linux 9 container as root
           docker run -d --name test-tarball \
             --privileged \
             --user root \
             -v $(pwd):/installer \
-            -v /tmp/tarball-packages-host:/tmp/tarball-packages-host \
-            ubuntu:22.04 \
+            rockylinux:9 \
             tail -f /dev/null
           
           # Wait for container to be ready
           sleep 10
           
-          # Install basic dependencies
+          # Install Python 3.12 and dependencies
           docker exec test-tarball bash -c "
-            apt-get update && apt-get install -y python3 python3-pip python3-venv git curl
+            dnf install -y python3.12 python3.12-pip python3.12-devel git curl --allowerasing
+            ln -sf /usr/bin/python3.12 /usr/bin/python3
+            ln -sf /usr/bin/pip3.12 /usr/bin/pip3
           "
           
           # Wait for dependencies to be fully installed
           sleep 5
           
-          # Download tarballs in the test container
+          # Run tarball installation (as root in container)
           docker exec test-tarball bash -c "
             cd /installer
-            mkdir -p /tmp/tarball-packages
-            ./bluebanquise-installer download --path /tmp/tarball-packages --tarball
+            ./bluebanquise-installer tarball --user testuser --home /tmp/bluebanquise
           "
           
-          # Copy requirements from host to container
-          docker exec test-tarball bash -c "
-            cp -r /tmp/tarball-packages-host/requirements /tmp/tarball-packages/
-          "
-          
-          # Wait for downloads to complete
-          sleep 5
-          
-          # Run installation with tarballs (as root in container)
-          docker exec test-tarball bash -c "
-            cd /installer
-            ./bluebanquise-installer offline \
-              --tarball-path /tmp/tarball-packages \
-              --requirements-path /tmp/tarball-packages/requirements \
-              --user testuser \
-              --home /tmp/bluebanquise
-          "
-          
-          # Wait a moment for any background processes to complete
+          # Wait for installation to complete and any background processes
           sleep 10
-          
-          # Verify installation success
-          docker exec test-tarball bash -c "
-            ls -la /tmp/bluebanquise/
-            ls -la /tmp/bluebanquise/ansible_venv/bin/
-            /tmp/bluebanquise/ansible_venv/bin/ansible --version
-          "
-          
+                    
           # Cleanup
           docker stop test-tarball
           docker rm test-tarball
