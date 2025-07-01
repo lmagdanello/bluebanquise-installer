@@ -40,7 +40,7 @@ sudo ./bluebanquise-installer offline --tarball-path /path/to/tarballs
 #### Download collections:
 ```bash
 # Download collections for offline installation
-./bluebanquise-installer download --path /tmp/collections
+sudo ./bluebanquise-installer download --path /tmp/collections
 
 # Transfer collections to target machine
 scp -r /tmp/collections user@target-machine:/tmp/
@@ -52,7 +52,7 @@ sudo ./bluebanquise-installer offline --collections-path /tmp/collections
 #### Download tarballs:
 ```bash
 # Download tarballs for offline installation
-./bluebanquise-installer download --path /tmp/tarballs --tarball
+sudo ./bluebanquise-installer download --path /tmp/tarballs --tarball
 
 # Transfer tarballs to target machine
 scp -r /tmp/tarballs user@target-machine:/tmp/
@@ -71,7 +71,7 @@ sudo ./bluebanquise-installer offline \
 #### Download Python requirements:
 ```bash
 # Download Python requirements for offline installation
-./bluebanquise-installer download --path /tmp/requirements --requirements
+sudo ./bluebanquise-installer download --path /tmp/requirements --requirements
 
 # Transfer requirements to target machine
 scp -r /tmp/requirements user@target-machine:/tmp/
@@ -85,7 +85,7 @@ sudo ./bluebanquise-installer offline \
 #### Download core variables:
 ```bash
 # Download core variables for offline installation
-./bluebanquise-installer download --path /tmp/core-vars --core-vars
+sudo ./bluebanquise-installer download --path /tmp/core-vars --core-vars
 
 # Transfer core variables to target machine
 scp /tmp/core-vars/bb_core.yml user@target-machine:/tmp/
