@@ -132,13 +132,11 @@ jobs:
           # Wait for dependencies to be fully installed
           sleep 5
           
-          # Download collections for offline test
+          # Download all components for offline test
           docker exec test-offline-rocky9 bash -c "
             cd /installer
             mkdir -p /tmp/offline-packages
-            ./bluebanquise-installer download --path /tmp/offline-packages/collections
-            ./bluebanquise-installer download --path /tmp/offline-packages/requirements --requirements
-            ./bluebanquise-installer download --path /tmp/offline-packages/core-vars --core-vars
+            ./bluebanquise-installer download --path /tmp/offline-packages --collections --requirements --core-vars
           "
           
           # Wait for downloads to complete
@@ -197,13 +195,11 @@ jobs:
           # Wait for dependencies to be fully installed
           sleep 5
           
-          # Download tarballs for offline test
+          # Download all components to a single directory
           docker exec test-tarball bash -c "
             cd /installer
             mkdir -p /tmp/tarball-packages
-            ./bluebanquise-installer download --path /tmp/tarball-packages --tarball
-            ./bluebanquise-installer download --path /tmp/tarball-packages/requirements --requirements
-            ./bluebanquise-installer download --path /tmp/tarball-packages/core-vars --core-vars
+            ./bluebanquise-installer download --path /tmp/tarball-packages --collections --requirements --core-vars
           "
           
           # Wait for downloads to complete
@@ -212,7 +208,7 @@ jobs:
           # Run offline installation with tarballs (as root in container)
           docker exec test-tarball bash -c "
             cd /installer
-            ./bluebanquise-installer offline --tarball-path /tmp/tarball-packages --requirements-path /tmp/tarball-packages/requirements --core-vars-path /tmp/tarball-packages/core-vars/bb_core.yml --user testuser --home /tmp/bluebanquise
+            ./bluebanquise-installer offline --collections-path /tmp/tarball-packages/collections --requirements-path /tmp/tarball-packages/requirements --core-vars-path /tmp/tarball-packages/core-vars/bb_core.yml --user testuser --home /tmp/bluebanquise
           "
           
           # Wait for installation to complete and any background processes

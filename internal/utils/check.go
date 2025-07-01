@@ -85,29 +85,32 @@ func checkInternetConnectivity() error {
 	return nil
 }
 
-// CheckOfflinePrerequisites verifies prerequisites for offline installation.
-func CheckOfflinePrerequisites(collectionsPath string) error {
-	LogInfo("Checking offline prerequisites", "path", collectionsPath)
-
-	// Check if directory exists
+// CheckCollectionsPrerequisites valida o diretório de collections offline
+func CheckCollectionsPrerequisites(collectionsPath string) error {
+	LogInfo("Checking collections prerequisites", "path", collectionsPath)
 	if _, err := os.Stat(collectionsPath); os.IsNotExist(err) {
 		LogError("Collections path does not exist", err, "path", collectionsPath)
 		return fmt.Errorf("collections path does not exist: %s", collectionsPath)
 	}
-
-	// Check if it contains collection files
+	info, err := os.Stat(collectionsPath)
+	if err != nil {
+		LogError("Cannot stat collections path", err, "path", collectionsPath)
+		return err
+	}
+	if !info.IsDir() {
+		LogError("Collections path is not a directory", nil, "path", collectionsPath)
+		return fmt.Errorf("collections path is not a directory: %s", collectionsPath)
+	}
 	entries, err := os.ReadDir(collectionsPath)
 	if err != nil {
 		LogError("Cannot read collections directory", err, "path", collectionsPath)
-		return fmt.Errorf("cannot read collections directory: %v", err)
+		return err
 	}
-
 	if len(entries) == 0 {
-		LogError("Collections directory is empty", nil, "path", collectionsPath)
-		return fmt.Errorf("collections directory is empty: %s", collectionsPath)
+		LogError("No collection files found in directory", nil, "path", collectionsPath)
+		return fmt.Errorf("no collection files found in directory: %s", collectionsPath)
 	}
-
-	LogInfo("Offline prerequisites check passed", "path", collectionsPath, "entries", len(entries))
+	LogInfo("Collections directory check passed", "path", collectionsPath)
 	return nil
 }
 
@@ -152,60 +155,6 @@ func CheckRequirementsPrerequisites(requirementsPath string) error {
 	}
 
 	LogInfo("Requirements prerequisites check passed", "path", requirementsPath, "entries", len(entries))
-	return nil
-}
-
-// CheckTarballPrerequisites verifies prerequisites for tarball installation.
-func CheckTarballPrerequisites(tarballPath string) error {
-	LogInfo("Checking tarball prerequisites", "path", tarballPath)
-
-	// Check if path exists
-	if _, err := os.Stat(tarballPath); os.IsNotExist(err) {
-		LogError("Tarball path does not exist", err, "path", tarballPath)
-		return fmt.Errorf("tarball path does not exist: %s", tarballPath)
-	}
-
-	info, err := os.Stat(tarballPath)
-	if err != nil {
-		LogError("Cannot stat tarball path", err, "path", tarballPath)
-		return fmt.Errorf("cannot stat tarball path: %v", err)
-	}
-
-	if !info.IsDir() {
-		// If it's a file, check if it's a tarball
-		name := info.Name()
-		if !strings.HasSuffix(name, ".tar.gz") && !strings.HasSuffix(name, ".tgz") {
-			LogError("File is not a tarball", nil, "path", tarballPath)
-			return fmt.Errorf("file is not a tarball: %s", tarballPath)
-		}
-		LogInfo("Tarball file check passed", "path", tarballPath)
-		return nil
-	}
-
-	// If it's a directory, check if it contains tarballs
-	entries, err := os.ReadDir(tarballPath)
-	if err != nil {
-		LogError("Cannot read tarball directory", err, "path", tarballPath)
-		return fmt.Errorf("cannot read tarball directory: %v", err)
-	}
-
-	tarballFound := false
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			name := entry.Name()
-			if strings.HasSuffix(name, ".tar.gz") || strings.HasSuffix(name, ".tgz") {
-				tarballFound = true
-				break
-			}
-		}
-	}
-
-	if !tarballFound {
-		LogError("No tarball files found in directory", nil, "path", tarballPath)
-		return fmt.Errorf("no tarball files found in directory: %s", tarballPath)
-	}
-
-	LogInfo("Tarball directory check passed", "path", tarballPath)
 	return nil
 }
 

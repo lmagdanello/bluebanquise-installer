@@ -18,8 +18,8 @@ and offline installation modes with support for custom users.
 
 Available commands:
   online    - Install BlueBanquise in online mode (downloads from GitHub)
-  offline   - Install BlueBanquise in offline mode (use --collections-path or --tarball-path)
-  download  - Download collections for offline installation (use --tarball for tarballs)
+  offline   - Install BlueBanquise in offline mode (use --collections-path)
+  download  - Download collections for offline installation
   status    - Check BlueBanquise installation status
 
 All commands support custom user configuration with --user and --home flags.

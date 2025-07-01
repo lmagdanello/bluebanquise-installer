@@ -82,7 +82,7 @@ func TestCheckCollectionsPrerequisites(t *testing.T) {
 			path := tt.setup()
 			defer tt.cleanup(path)
 
-			err := CheckOfflinePrerequisites(path)
+			err := CheckCollectionsPrerequisites(path)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -164,7 +164,7 @@ func TestCheckTarballPrerequisites(t *testing.T) {
 			path := tt.setup()
 			defer tt.cleanup(path)
 
-			err := CheckTarballPrerequisites(path)
+			err := CheckCollectionsPrerequisites(path)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {

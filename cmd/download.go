@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/lmagdanello/bluebanquise-installer/internal/system"
@@ -13,7 +12,7 @@ import (
 
 var (
 	downloadPath         string
-	downloadTarball      bool
+	downloadCollections  bool
 	downloadRequirements bool
 	downloadCoreVars     bool
 	downloadCmd          = &cobra.Command{
@@ -21,35 +20,26 @@ var (
 		Short: "Download BlueBanquise collections and requirements for offline installation",
 		Long: `Download BlueBanquise collections and requirements from GitHub for offline installation.
 		
-This command provides four methods:
+This command downloads files to a base directory specified by --path. Use specific flags to download different components:
 
-Method 1 - Download collections to directory (default):
-  Downloads collections using ansible-galaxy and prepares them for offline installation.
+--collections: Downloads collection tarballs to <path>/collections/
+--requirements: Downloads Python packages to <path>/requirements/
+--core-vars: Downloads core variables to <path>/core-vars/
 
-Method 2 - Download tarballs:
-  Downloads collection tarballs that can be manually transferred and installed.
-  Use --tarball flag for this method.
-
-Method 3 - Download Python requirements:
-  Downloads Python packages required by BlueBanquise for offline installation.
-  Use --requirements flag for this method.
-
-Method 4 - Download core variables:
-  Downloads core variables (bb_core.yml) from GitHub for offline installation.
-  Use --core-vars flag for this method.
+You can use multiple flags to download multiple components at once.
 
 Examples:
-  # Download collections to directory
-  ./bluebanquise-installer download --path /tmp/bluebanquise-offline
+  # Download collections only
+  ./bluebanquise-installer download --path /tmp/offline --collections
 
-  # Download tarballs
-  ./bluebanquise-installer download --path /tmp/tarballs --tarball
-
-  # Download Python requirements
+  # Download requirements only
   ./bluebanquise-installer download --path /tmp/requirements --requirements
 
-  # Download core variables
-  ./bluebanquise-installer download --path /tmp/core-vars --core-vars`,
+  # Download core variables only
+  ./bluebanquise-installer download --path /tmp/core-vars --core-vars
+
+  # Download everything
+  ./bluebanquise-installer download --path /tmp/offline --collections --requirements --core-vars`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if downloadPath == "" {
 				utils.LogError("Missing download path", nil)
@@ -57,34 +47,98 @@ Examples:
 				os.Exit(1)
 			}
 
+			if !downloadCollections && !downloadRequirements && !downloadCoreVars {
+				utils.LogError("No download type specified", nil)
+				fmt.Println("Error: specify at least one of --collections, --requirements, or --core-vars")
+				os.Exit(1)
+			}
+
 			utils.LogInfo("Starting BlueBanquise download",
 				"path", downloadPath,
-				"tarball", downloadTarball,
+				"collections", downloadCollections,
 				"requirements", downloadRequirements,
 				"core-vars", downloadCoreVars)
 
-			// Create download directory
+			// Create base download directory
 			if err := os.MkdirAll(downloadPath, 0755); err != nil {
 				utils.LogError("Error creating download directory", err, "path", downloadPath)
 				fmt.Printf("Error creating download directory: %v\n", err)
 				os.Exit(1)
 			}
 
+			if downloadCollections {
+				downloadCollectionsToPath()
+			}
 			if downloadRequirements {
-				downloadPythonRequirements()
-			} else if downloadTarball {
-				downloadTarballs()
-			} else if downloadCoreVars {
-				downloadCoreVariables()
-			} else {
-				downloadCollections()
+				downloadRequirementsToPath()
+			}
+			if downloadCoreVars {
+				downloadCoreVarsToPath()
 			}
 		},
 	}
 )
 
-func downloadPythonRequirements() {
-	utils.LogInfo("Downloading Python requirements", "path", downloadPath)
+func downloadCollectionsToPath() {
+	collectionsPath := filepath.Join(downloadPath, "collections")
+	utils.LogInfo("Downloading collections", "path", collectionsPath)
+
+	// Create temporary Python environment outside download directory
+	tempVenv := filepath.Join(os.TempDir(), "bluebanquise_download_venv")
+	if err := utils.RunCommand("/usr/bin/python3", "-m", "venv", tempVenv); err != nil {
+		utils.LogError("Error creating temporary virtual environment", err, "path", tempVenv)
+		fmt.Printf("Error creating temporary virtual environment: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Install ansible-galaxy in temp environment
+	python3 := filepath.Join(tempVenv, "bin", "python3")
+	if err := utils.RunCommand(python3, "-m", "pip", "install", "ansible-core"); err != nil {
+		utils.LogError("Error installing ansible-core", err)
+		fmt.Printf("Error installing ansible-core: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Download tarballs
+	ansibleGalaxy := filepath.Join(tempVenv, "bin", "ansible-galaxy")
+
+	utils.LogInfo("Downloading BlueBanquise collection tarball")
+	fmt.Println("Downloading BlueBanquise collection tarball...")
+	if err := utils.RunCommand(ansibleGalaxy,
+		"collection", "download",
+		"git+https://github.com/bluebanquise/bluebanquise.git#/collections/infrastructure,master",
+		"-p", collectionsPath); err != nil {
+		utils.LogError("Error downloading BlueBanquise tarball", err)
+		fmt.Printf("Error downloading BlueBanquise tarball: %v\n", err)
+		os.Exit(1)
+	}
+
+	utils.LogInfo("Downloading community.general collection tarball")
+	fmt.Println("Downloading community.general collection tarball...")
+	if err := utils.RunCommand(ansibleGalaxy,
+		"collection", "download",
+		"community.general",
+		"-p", collectionsPath); err != nil {
+		utils.LogError("Error downloading community.general tarball", err)
+		fmt.Printf("Error downloading community.general tarball: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Clean up temp environment
+	if err := os.RemoveAll(tempVenv); err != nil {
+		utils.LogWarning("Could not remove temporary environment", "error", err, "path", tempVenv)
+		fmt.Printf("Warning: could not remove temporary environment: %v\n", err)
+	}
+
+	utils.LogInfo("Collections downloaded successfully", "path", collectionsPath)
+	fmt.Printf("Collections downloaded successfully to: %s\n", collectionsPath)
+	fmt.Println("Transfer this directory to your target machine and use with:")
+	fmt.Printf("  ./bluebanquise-installer offline --collections-path %s\n", collectionsPath)
+}
+
+func downloadRequirementsToPath() {
+	requirementsPath := filepath.Join(downloadPath, "requirements")
+	utils.LogInfo("Downloading Python requirements", "path", requirementsPath)
 
 	// Detect OS to get the correct requirements
 	osID, version, err := system.DetectOS()
@@ -112,170 +166,42 @@ func downloadPythonRequirements() {
 	utils.LogInfo("Downloading requirements for OS", "os", osID, "version", version, "requirements", requirements)
 	fmt.Printf("Downloading Python requirements for %s %s...\n", osID, version)
 
-	if err := utils.DownloadRequirements(requirements, downloadPath); err != nil {
+	if err := utils.DownloadRequirements(requirements, requirementsPath); err != nil {
 		utils.LogError("Error downloading requirements", err)
 		fmt.Printf("Error downloading requirements: %v\n", err)
 		os.Exit(1)
 	}
 
-	utils.LogInfo("Python requirements downloaded successfully", "path", downloadPath)
-	fmt.Printf("Python requirements downloaded successfully to: %s\n", downloadPath)
+	utils.LogInfo("Python requirements downloaded successfully", "path", requirementsPath)
+	fmt.Printf("Python requirements downloaded successfully to: %s\n", requirementsPath)
 	fmt.Println("Transfer this directory to your target machine and use with:")
-	fmt.Printf("  ./bluebanquise-installer offline --collections-path <collections-path> --requirements-path %s\n", downloadPath)
+	fmt.Printf("  ./bluebanquise-installer offline --collections-path <collections-path> --requirements-path %s\n", requirementsPath)
 }
 
-func downloadCollections() {
-	utils.LogInfo("Downloading collections to directory", "path", downloadPath)
-
-	// Create temporary Python environment outside download directory
-	tempVenv := filepath.Join(os.TempDir(), "bluebanquise_download_venv")
-	if err := utils.RunCommand("/usr/bin/python3", "-m", "venv", tempVenv); err != nil {
-		utils.LogError("Error creating temporary virtual environment", err, "path", tempVenv)
-		fmt.Printf("Error creating temporary virtual environment: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Install ansible-galaxy in temp environment
-	python3 := filepath.Join(tempVenv, "bin", "python3")
-	if err := utils.RunCommand(python3, "-m", "pip", "install", "ansible-core"); err != nil {
-		utils.LogError("Error installing ansible-core", err)
-		fmt.Printf("Error installing ansible-core: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Download collections
-	ansibleGalaxy := filepath.Join(tempVenv, "bin", "ansible-galaxy")
-	collectionsDir := filepath.Join(downloadPath, "collections")
-
-	utils.LogInfo("Downloading BlueBanquise collections")
-	fmt.Println("Downloading BlueBanquise collections...")
-	downloadCmd := exec.Command(ansibleGalaxy,
-		"collection", "download",
-		"git+https://github.com/bluebanquise/bluebanquise.git#/collections/infrastructure,master",
-		"-p", collectionsDir)
-	if err := downloadCmd.Run(); err != nil {
-		utils.LogError("Error downloading collections", err)
-		fmt.Printf("Error downloading collections: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Download community.general
-	utils.LogInfo("Downloading community.general collection")
-	fmt.Println("Downloading community.general collection...")
-	communityCmd := exec.Command(ansibleGalaxy,
-		"collection", "download",
-		"community.general",
-		"-p", collectionsDir)
-	if err := communityCmd.Run(); err != nil {
-		utils.LogError("Error downloading community.general", err)
-		fmt.Printf("Error downloading community.general: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Clean up temp environment
-	if err := os.RemoveAll(tempVenv); err != nil {
-		utils.LogWarning("Could not remove temporary environment", "error", err, "path", tempVenv)
-		fmt.Printf("Warning: could not remove temporary environment: %v\n", err)
-	}
-
-	utils.LogInfo("Collections downloaded successfully", "path", collectionsDir)
-	fmt.Printf("Collections downloaded successfully to: %s\n", collectionsDir)
-	fmt.Println("You can now use this path with the offline command:")
-	fmt.Printf("  ./bluebanquise-installer offline --collections-path %s\n", collectionsDir)
-}
-
-func downloadTarballs() {
-	utils.LogInfo("Downloading tarballs", "path", downloadPath)
-
-	// Create temporary Python environment outside download directory
-	tempVenv := filepath.Join(os.TempDir(), "bluebanquise_download_venv")
-	if err := utils.RunCommand("/usr/bin/python3", "-m", "venv", tempVenv); err != nil {
-		utils.LogError("Error creating temporary virtual environment", err, "path", tempVenv)
-		fmt.Printf("Error creating temporary virtual environment: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Install ansible-galaxy in temp environment
-	python3 := filepath.Join(tempVenv, "bin", "python3")
-	if err := utils.RunCommand(python3, "-m", "pip", "install", "ansible-core"); err != nil {
-		utils.LogError("Error installing ansible-core", err)
-		fmt.Printf("Error installing ansible-core: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Download tarballs
-	ansibleGalaxy := filepath.Join(tempVenv, "bin", "ansible-galaxy")
-
-	utils.LogInfo("Downloading BlueBanquise collection tarball")
-	fmt.Println("Downloading BlueBanquise collection tarball...")
-	if err := utils.RunCommand(ansibleGalaxy,
-		"collection", "download",
-		"git+https://github.com/bluebanquise/bluebanquise.git#/collections/infrastructure,master",
-		"-p", downloadPath); err != nil {
-		utils.LogError("Error downloading BlueBanquise tarball", err)
-		fmt.Printf("Error downloading BlueBanquise tarball: %v\n", err)
-		os.Exit(1)
-	}
-
-	utils.LogInfo("Downloading community.general collection tarball")
-	fmt.Println("Downloading community.general collection tarball...")
-	if err := utils.RunCommand(ansibleGalaxy,
-		"collection", "download",
-		"community.general",
-		"-p", downloadPath); err != nil {
-		utils.LogError("Error downloading community.general tarball", err)
-		fmt.Printf("Error downloading community.general tarball: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Clean up temp environment
-	if err := os.RemoveAll(tempVenv); err != nil {
-		utils.LogWarning("Could not remove temporary environment", "error", err, "path", tempVenv)
-		fmt.Printf("Warning: could not remove temporary environment: %v\n", err)
-	}
-
-	utils.LogInfo("Tarballs downloaded successfully", "path", downloadPath)
-	fmt.Printf("Tarballs downloaded successfully to: %s\n", downloadPath)
-
-	// List contents to verify download
-	entries, err := os.ReadDir(downloadPath)
-	if err != nil {
-		utils.LogWarning("Could not read download directory", "error", err, "path", downloadPath)
-	} else {
-		utils.LogInfo("Download directory contents", "path", downloadPath, "entries", len(entries))
-		for _, entry := range entries {
-			utils.LogInfo("Downloaded file", "name", entry.Name(), "is_dir", entry.IsDir())
-		}
-	}
-
-	fmt.Println("Transfer these files to your target machine and install with:")
-	fmt.Println("  ansible-galaxy collection install <tarball-file> -p <collections-directory>")
-	fmt.Println("  ./bluebanquise-installer offline --collections-path <collections-directory>")
-}
-
-func downloadCoreVariables() {
-	utils.LogInfo("Downloading core variables", "path", downloadPath)
+func downloadCoreVarsToPath() {
+	coreVarsPath := filepath.Join(downloadPath, "core-vars")
+	utils.LogInfo("Downloading core variables", "path", coreVarsPath)
 
 	// Download core variables from GitHub
 	utils.LogInfo("Downloading core variables from GitHub")
 	fmt.Println("Downloading core variables from GitHub...")
-	if err := utils.DownloadFile("https://raw.githubusercontent.com/bluebanquise/bluebanquise/refs/heads/master/resources/bb_core.yml", filepath.Join(downloadPath, "bb_core.yml")); err != nil {
+	if err := utils.DownloadFile("https://raw.githubusercontent.com/bluebanquise/bluebanquise/refs/heads/master/resources/bb_core.yml", filepath.Join(coreVarsPath, "bb_core.yml")); err != nil {
 		utils.LogError("Error downloading core variables", err)
 		fmt.Printf("Error downloading core variables: %v\n", err)
 		os.Exit(1)
 	}
 
-	utils.LogInfo("Core variables downloaded successfully", "path", downloadPath)
-	fmt.Printf("Core variables downloaded successfully to: %s\n", downloadPath)
+	utils.LogInfo("Core variables downloaded successfully", "path", coreVarsPath)
+	fmt.Printf("Core variables downloaded successfully to: %s\n", coreVarsPath)
 	fmt.Println("Transfer this file to your target machine and use with:")
-	fmt.Printf("  ./bluebanquise-installer offline --core-vars-path %s\n", downloadPath)
+	fmt.Printf("  ./bluebanquise-installer offline --collections-path <collections-path> --core-vars-path %s/bb_core.yml\n", coreVarsPath)
 }
 
 func init() {
 	downloadCmd.Flags().StringVarP(&downloadPath, "path", "p", "", "Path to download collections (required)")
-	downloadCmd.Flags().BoolVarP(&downloadTarball, "tarball", "t", false, "Download tarballs instead of collections directory")
+	downloadCmd.Flags().BoolVarP(&downloadCollections, "collections", "c", false, "Download collections/tarballs for offline installation")
 	downloadCmd.Flags().BoolVarP(&downloadRequirements, "requirements", "r", false, "Download Python requirements for offline installation")
-	downloadCmd.Flags().BoolVarP(&downloadCoreVars, "core-vars", "c", false, "Download core variables for offline installation")
+	downloadCmd.Flags().BoolVarP(&downloadCoreVars, "core-vars", "v", false, "Download core variables for offline installation")
 	if err := downloadCmd.MarkFlagRequired("path"); err != nil {
 		utils.LogError("Error marking path flag as required", err)
 		os.Exit(1)

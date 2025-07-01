@@ -27,38 +27,23 @@ ansible-galaxy collection install git+https://github.com/bluebanquise/bluebanqui
 
 You can install BlueBanquise offline using pre-installed collections, tarball files, offline Python requirements, and core variables:
 
-#### Using pre-installed collections:
+#### Using tarball files:
 ```bash
 sudo ./bluebanquise-installer offline --collections-path /path/to/collections
 ```
 
-#### Using tarball files:
+**Note**: The download command downloads collection tarballs (`.tar.gz` files) that can be used for offline installation. Use `--collections-path` to specify the collections directory.
+
+#### Download collections and tarballs:
 ```bash
-sudo ./bluebanquise-installer offline --tarball-path /path/to/tarballs
-```
+# Download collection tarballs for offline installation
+sudo ./bluebanquise-installer download --path /tmp/offline --collections
 
-#### Download collections:
-```bash
-# Download collections for offline installation
-sudo ./bluebanquise-installer download --path /tmp/collections
+# Transfer tarball files to target machine
+scp -r /tmp/offline user@target-machine:/tmp/
 
-# Transfer collections to target machine
-scp -r /tmp/collections user@target-machine:/tmp/
-
-# Install on target machine with offline collections
-sudo ./bluebanquise-installer offline --collections-path /tmp/collections
-```
-
-#### Download tarballs:
-```bash
-# Download tarballs for offline installation
-sudo ./bluebanquise-installer download --path /tmp/tarballs --tarball
-
-# Transfer tarballs to target machine
-scp -r /tmp/tarballs user@target-machine:/tmp/
-
-# Install on target machine with offline tarballs
-sudo ./bluebanquise-installer offline --tarball-path /tmp/tarballs
+# Install on target machine with offline tarball files
+sudo ./bluebanquise-installer offline --collections-path /tmp/offline/collections
 ```
 
 #### Using offline Python requirements:
@@ -71,45 +56,44 @@ sudo ./bluebanquise-installer offline \
 #### Download Python requirements:
 ```bash
 # Download Python requirements for offline installation
-sudo ./bluebanquise-installer download --path /tmp/requirements --requirements
+sudo ./bluebanquise-installer download --path /tmp/offline --requirements
 
 # Transfer requirements to target machine
-scp -r /tmp/requirements user@target-machine:/tmp/
+scp -r /tmp/offline user@target-machine:/tmp/
 
 # Install on target machine with offline requirements
 sudo ./bluebanquise-installer offline \
   --collections-path /path/to/collections \
-  --requirements-path /tmp/requirements
+  --requirements-path /tmp/offline/requirements
 ```
 
 #### Download core variables:
 ```bash
 # Download core variables for offline installation
-sudo ./bluebanquise-installer download --path /tmp/core-vars --core-vars
+sudo ./bluebanquise-installer download --path /tmp/offline --core-vars
 
 # Transfer core variables to target machine
-scp /tmp/core-vars/bb_core.yml user@target-machine:/tmp/
+scp /tmp/offline/bb_core.yml user@target-machine:/tmp/
 
 # Install on target machine with offline core variables
 sudo ./bluebanquise-installer offline \
   --collections-path /path/to/collections \
-  --core-vars-path /tmp/bb_core.yml
+  --core-vars-path /tmp/offline/core-vars/bb_core.yml
 ```
 
 #### Complete offline installation:
 ```bash
 sudo ./bluebanquise-installer offline \
-  --tarball-path /tmp/bluebanquise-tarballs \
-  --requirements-path /tmp/python-requirements \
-  --core-vars-path /tmp/bb_core.yml \
+  --collections-path /tmp/offline/collections \
+  --requirements-path /tmp/offline/requirements \
+  --core-vars-path /tmp/offline/core-vars/bb_core.yml \
   --user myuser \
   --home /opt/bluebanquise
 ```
 
 #### Command options:
 
-- `--collections-path, -c`: Path to local BlueBanquise collections (pre-installed)
-- `--tarball-path, -t`: Path to BlueBanquise collection tarballs (files or directory)
+- `--collections-path, -c`: Caminho para as collections BlueBanquise (diretório)
 - `--requirements-path, -r`: Path to Python requirements for offline installation
 - `--core-vars-path, -v`: Path to core variables (bb_core.yml) for offline installation
 - `--user, -u`: BlueBanquise username (default: bluebanquise)
@@ -117,7 +101,7 @@ sudo ./bluebanquise-installer offline \
 - `--skip-environment, -e`: Skip environment configuration
 - `--debug, -d`: Enable debug mode
 
-**Note**: You must use either `--collections-path` OR `--tarball-path`, not both. The `--requirements-path` and `--core-vars-path` are optional and can be used with either method.
+**Note**: The `--requirements-path` and `--core-vars-path` are optional and can be used with the `--collections-path` method.
 
 ### Status Check
 
@@ -143,8 +127,8 @@ sudo ./bluebanquise-installer online \
 
 # Offline installation with custom user
 sudo ./bluebanquise-installer offline \
-  --tarball-path /tmp/collections \
-  --requirements-path /tmp/requirements \
+  --collections-path /tmp/offline/collections \
+  --requirements-path /tmp/offline/requirements \
   --user ansible-admin \
   --home /opt/ansible
 
