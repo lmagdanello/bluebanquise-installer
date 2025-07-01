@@ -138,6 +138,7 @@ jobs:
             mkdir -p /tmp/offline-packages
             ./bluebanquise-installer download --path /tmp/offline-packages/collections
             ./bluebanquise-installer download --path /tmp/offline-packages/requirements --requirements
+            ./bluebanquise-installer download --path /tmp/offline-packages/core-vars --core-vars
           "
           
           # Wait for downloads to complete
@@ -146,7 +147,7 @@ jobs:
           # Run offline installation (as root in container)
           docker exec test-offline-rocky9 bash -c "
             cd /installer
-            ./bluebanquise-installer offline --collections-path /tmp/offline-packages/collections --requirements-path /tmp/offline-packages/requirements --user testuser --home /tmp/bluebanquise
+            ./bluebanquise-installer offline --collections-path /tmp/offline-packages/collections --requirements-path /tmp/offline-packages/requirements --core-vars-path /tmp/offline-packages/core-vars/bb_core.yml --user testuser --home /tmp/bluebanquise
           "
           
           # Wait for installation to complete and any background processes
@@ -202,6 +203,7 @@ jobs:
             mkdir -p /tmp/tarball-packages
             ./bluebanquise-installer download --path /tmp/tarball-packages --tarball
             ./bluebanquise-installer download --path /tmp/tarball-packages/requirements --requirements
+            ./bluebanquise-installer download --path /tmp/tarball-packages/core-vars --core-vars
           "
           
           # Wait for downloads to complete
@@ -210,7 +212,7 @@ jobs:
           # Run offline installation with tarballs (as root in container)
           docker exec test-tarball bash -c "
             cd /installer
-            ./bluebanquise-installer offline --tarball-path /tmp/tarball-packages --requirements-path /tmp/tarball-packages/requirements --user testuser --home /tmp/bluebanquise
+            ./bluebanquise-installer offline --tarball-path /tmp/tarball-packages --requirements-path /tmp/tarball-packages/requirements --core-vars-path /tmp/tarball-packages/core-vars/bb_core.yml --user testuser --home /tmp/bluebanquise
           "
           
           # Wait for installation to complete and any background processes
@@ -306,7 +308,7 @@ jobs:
           cp LICENSE release/ 2>/dev/null || echo "No LICENSE file found"
 
       - name: Upload release assets
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bluebanquise-installer-release
           path: release/ 
