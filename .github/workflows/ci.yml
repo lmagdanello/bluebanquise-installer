@@ -71,7 +71,7 @@ jobs:
           
           # Install Python 3.12 and dependencies
           docker exec test-online-rocky9 bash -c "
-            dnf install -y python3.12 python3.12-pip python3.12-devel git curl --allowerasing
+            dnf install -y python3.12 python3.12-pip python3.12-devel git curl python3.12-setuptools --allowerasing
             ln -sf /usr/bin/python3.12 /usr/bin/python3
             ln -sf /usr/bin/pip3.12 /usr/bin/pip3
           "
@@ -124,7 +124,7 @@ jobs:
           
           # Install Python 3.12 and dependencies
           docker exec test-offline-rocky9 bash -c "
-            dnf install -y python3.12 python3.12-pip python3.12-devel git curl --allowerasing
+            dnf install -y python3.12 python3.12-pip python3.12-devel git curl python3.12-setuptools --allowerasing
             ln -sf /usr/bin/python3.12 /usr/bin/python3
             ln -sf /usr/bin/pip3.12 /usr/bin/pip3
           "
@@ -188,7 +188,7 @@ jobs:
           
           # Install Python 3.12 and dependencies
           docker exec test-tarball bash -c "
-            dnf install -y python3.12 python3.12-pip python3.12-devel git curl --allowerasing
+            dnf install -y python3.12 python3.12-pip python3.12-devel git curl python3.12-setuptools --allowerasing
             ln -sf /usr/bin/python3.12 /usr/bin/python3
             ln -sf /usr/bin/pip3.12 /usr/bin/pip3
           "

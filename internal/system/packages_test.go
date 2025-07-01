@@ -139,7 +139,7 @@ func TestFindPackagesForOS(t *testing.T) {
 			osID:        "rhel",
 			version:     "9",
 			expectFound: true,
-			expectedLen: 5, // git, python3, python3-pip, python3-policycoreutils, openssh-clients
+			expectedLen: 6, // git, python3, python3-pip, python3-policycoreutils, openssh-clients, python3-setuptools
 		},
 		{
 			name:        "Debian 12",
@@ -186,7 +186,6 @@ func TestPythonRequirements(t *testing.T) {
 		"jmespath",
 		"jinja2",
 		"pymysql",
-		"setuptools",
 	}
 
 	assert.Len(t, PythonRequirements, len(expectedPackages))
