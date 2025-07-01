@@ -83,6 +83,13 @@ func downloadCollectionsToPath() {
 	collectionsPath := filepath.Join(downloadPath, "collections")
 	utils.LogInfo("Downloading collections", "path", collectionsPath)
 
+	// Create collections directory
+	if err := os.MkdirAll(collectionsPath, 0755); err != nil {
+		utils.LogError("Error creating collections directory", err, "path", collectionsPath)
+		fmt.Printf("Error creating collections directory: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Create temporary Python environment outside download directory
 	tempVenv := filepath.Join(os.TempDir(), "bluebanquise_download_venv")
 	if err := utils.RunCommand("/usr/bin/python3", "-m", "venv", tempVenv); err != nil {
@@ -140,6 +147,13 @@ func downloadRequirementsToPath() {
 	requirementsPath := filepath.Join(downloadPath, "requirements")
 	utils.LogInfo("Downloading Python requirements", "path", requirementsPath)
 
+	// Create requirements directory
+	if err := os.MkdirAll(requirementsPath, 0755); err != nil {
+		utils.LogError("Error creating requirements directory", err, "path", requirementsPath)
+		fmt.Printf("Error creating requirements directory: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Detect OS to get the correct requirements
 	osID, version, err := system.DetectOS()
 	if err != nil {
@@ -181,6 +195,13 @@ func downloadRequirementsToPath() {
 func downloadCoreVarsToPath() {
 	coreVarsPath := filepath.Join(downloadPath, "core-vars")
 	utils.LogInfo("Downloading core variables", "path", coreVarsPath)
+
+	// Create core-vars directory
+	if err := os.MkdirAll(coreVarsPath, 0755); err != nil {
+		utils.LogError("Error creating core-vars directory", err, "path", coreVarsPath)
+		fmt.Printf("Error creating core-vars directory: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Download core variables from GitHub
 	utils.LogInfo("Downloading core variables from GitHub")
