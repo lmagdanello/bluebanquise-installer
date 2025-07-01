@@ -206,31 +206,31 @@ The CI runs on every push and pull request, including:
 - **Unit Tests**: Comprehensive test coverage
 - **Integration Tests**: End-to-end workflow testing
 - **Linting**: Code quality checks with golangci-lint
-- **Security Scanning**: Vulnerability analysis with Trivy and gosec
-- **Multi-Platform Testing**: Tests on different distributions and architectures
-- **Offline Installation Testing**: Validates offline installation workflows
+- **Multi-Platform Testing**: Tests on different architectures
+- **Offline Installation Testing**: Validates offline installation workflows with Python 3.12
 
 ### Workflows
 
 #### Main CI (`ci.yml`)
 - **Test**: Unit tests, integration tests, and linting
-- **Online Installation Tests**: Tests installation on Ubuntu 22.04, Ubuntu 24.04, Debian 12, Rocky Linux 9, OpenSUSE Leap 15.5
-- **Offline Installation Tests**: Tests offline installation on Ubuntu 22.04 and Rocky Linux 9
-- **Tarball Installation Tests**: Tests using tarball files
+- **Online Installation Tests**: Tests installation on Rocky Linux 9 with Python 3.12
+- **Offline Installation Tests**: Tests offline installation on Rocky Linux 9 with Python 3.12
+- **Tarball Installation Tests**: Tests using tarball files on Rocky Linux 9 with Python 3.12
 - **Architecture Tests**: Tests on amd64 and arm64
 - **Integration Tests**: Complete workflow validation
-
-#### Security (`security.yml`)
-- **Dependency Review**: Analyzes dependency changes in PRs
-- **CodeQL Analysis**: Static code analysis for security vulnerabilities
-- **Trivy Scanner**: Vulnerability scanning
-- **Go Security Checker**: Go-specific security analysis
-- **License Check**: Validates license compliance
+- **Build Release**: Automated builds for multiple platforms (Linux, macOS, Windows)
 
 #### Release (`release.yml`)
 - **Automated Releases**: Creates releases when tags are pushed
 - **Multi-Platform Builds**: Builds for Linux, macOS, and Windows (amd64/arm64)
 - **Checksums**: Generates SHA256 checksums for all binaries
+
+### Key Improvements
+
+- **Simplified Testing**: Focused on Rocky Linux 9 with Python 3.12 for consistent and reliable testing
+- **Enhanced Offline Support**: Automatic download of `setuptools` and `wheel` packages for complete offline Python installation
+- **Core Variables Integration**: Full support for offline core variables installation
+- **Modern Dependencies**: Updated to use latest GitHub Actions and Go tooling
 
 ### Local Development
 
@@ -240,9 +240,6 @@ make ci
 
 # Run CI checks without Docker
 make ci-local
-
-# Run security checks
-make security-check
 
 # Build release binaries
 make release
@@ -273,6 +270,8 @@ This CLI provides:
 - **Custom User Support**: Configure custom username and home directory
 - **Complete Offline Support**: Download collections and Python requirements for air-gapped environments
 - **Core Variables Installation**: Automatically installs BlueBanquise core variables (bb_core.yml)
+- **Enhanced Python Requirements**: Automatic inclusion of `setuptools` and `wheel` for complete offline Python package installation
+- **Python 3.12 Support**: Optimized for Python 3.12 across all supported distributions
 
 ## Core Variables
 
