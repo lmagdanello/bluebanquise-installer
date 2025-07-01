@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // SystemCheck verifies if the system has the necessary prerequisites.
@@ -75,17 +76,21 @@ func checkPackageManager() error {
 func checkInternetConnectivity() error {
 	LogInfo("Checking internet connectivity")
 	// Try to connect to a reliable host
-	conn, err := net.Dial("tcp", "8.8.8.8:53")
+	conn, err := net.DialTimeout("tcp", "8.8.8.8:53", 5*time.Second)
 	if err != nil {
 		LogError("No internet connectivity detected", err)
 		return fmt.Errorf("no internet connectivity detected")
 	}
-	defer conn.Close()
+	defer func() {
+		if closeErr := conn.Close(); closeErr != nil {
+			LogWarning("Failed to close connection", "error", closeErr)
+		}
+	}()
 	LogInfo("Internet connectivity confirmed")
 	return nil
 }
 
-// CheckCollectionsPrerequisites valida o diretório de collections offline
+// CheckCollectionsPrerequisites validate the collections directory offline.
 func CheckCollectionsPrerequisites(collectionsPath string) error {
 	LogInfo("Checking collections prerequisites", "path", collectionsPath)
 	if _, err := os.Stat(collectionsPath); os.IsNotExist(err) {

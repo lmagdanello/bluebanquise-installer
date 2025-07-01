@@ -88,7 +88,11 @@ func AppendLineIfMissing(filePath, line string) error {
 	}
 
 	if file != nil {
-		defer file.Close()
+		defer func() {
+			if closeErr := file.Close(); closeErr != nil {
+				LogWarning("Failed to close file", "error", closeErr, "file", filePath)
+			}
+		}()
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			if strings.TrimSpace(scanner.Text()) == strings.TrimSpace(line) {
@@ -104,7 +108,11 @@ func AppendLineIfMissing(filePath, line string) error {
 		LogError("Failed to open file for writing", err, "file", filePath)
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			LogWarning("Failed to close file", "error", closeErr, "file", filePath)
+		}
+	}()
 
 	_, err = file.WriteString(line + "\n")
 	if err != nil {
@@ -128,7 +136,11 @@ func EnsureLineInSudoers(line string) error {
 	}
 
 	if file != nil {
-		defer file.Close()
+		defer func() {
+			if closeErr := file.Close(); closeErr != nil {
+				LogWarning("Failed to close sudoers file", "error", closeErr, "file", sudoersPath)
+			}
+		}()
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			if strings.TrimSpace(scanner.Text()) == strings.TrimSpace(line) {
@@ -144,7 +156,11 @@ func EnsureLineInSudoers(line string) error {
 		LogError("Failed to open sudoers file for writing", err, "file", sudoersPath)
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			LogWarning("Failed to close sudoers file", "error", closeErr, "file", sudoersPath)
+		}
+	}()
 
 	_, err = file.WriteString(line + "\n")
 	if err != nil {
@@ -173,7 +189,11 @@ func DownloadFile(url, filepath string) error {
 		LogError("Failed to download file", err, "url", url)
 		return fmt.Errorf("failed to download file: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			LogWarning("Failed to close response body", "error", closeErr, "url", url)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		LogError("Failed to download file", nil, "status", resp.StatusCode, "url", url)
@@ -183,9 +203,13 @@ func DownloadFile(url, filepath string) error {
 	file, err := os.Create(filepath)
 	if err != nil {
 		LogError("Failed to create file", err, "path", filepath)
-		return fmt.Errorf("failed to create file: %v", err)
+		return fmt.Errorf("failed to create file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			LogWarning("Failed to close file", "error", closeErr, "path", filepath)
+		}
+	}()
 
 	if _, err := io.Copy(file, resp.Body); err != nil {
 		LogError("Failed to write file", err, "path", filepath)

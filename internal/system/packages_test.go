@@ -77,7 +77,11 @@ VERSION_ID="1.0"`,
 			// Create temporary os-release file
 			err := os.WriteFile(tt.osReleasePath, []byte(tt.osReleaseContent), 0644)
 			require.NoError(t, err)
-			defer os.Remove(tt.osReleasePath)
+			defer func() {
+				if err := os.Remove(tt.osReleasePath); err != nil {
+					t.Logf("Failed to remove test file: %v", err)
+				}
+			}()
 
 			// For this test, we'll skip the actual OS detection since it requires mocking
 			// the file system. Instead, we'll test the OSMapping functionality

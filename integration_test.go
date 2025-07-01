@@ -62,7 +62,9 @@ test_variable: "test_value"
 
 	// Clean up after test
 	defer func() {
-		os.RemoveAll(tempDir)
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Failed to remove temp directory: %v", err)
+		}
 	}()
 
 	// This test would normally run the actual installation
@@ -83,7 +85,11 @@ func TestIntegrationDownloadFlow(t *testing.T) {
 	// It requires internet connectivity
 
 	tempDir := t.TempDir()
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Failed to remove temp directory: %v", err)
+		}
+	}()
 
 	// Test that we can create the download directory structure
 	downloadPath := filepath.Join(tempDir, "download")
@@ -104,7 +110,11 @@ func TestIntegrationSystemRequirements(t *testing.T) {
 	// For now, we'll just verify basic file system operations
 
 	tempDir := t.TempDir()
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Failed to remove temp directory: %v", err)
+		}
+	}()
 
 	// Test file creation
 	testFile := filepath.Join(tempDir, "test.txt")

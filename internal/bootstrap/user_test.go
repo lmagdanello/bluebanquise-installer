@@ -54,7 +54,9 @@ func TestCreateBluebanquiseUser(t *testing.T) {
 				// Clean up after test
 				defer func() {
 					// Remove test user and home directory
-					os.RemoveAll(tt.userHome)
+					if err := os.RemoveAll(tt.userHome); err != nil {
+						t.Logf("Failed to remove test directory: %v", err)
+					}
 				}()
 				assert.NoError(t, err)
 			}

@@ -36,7 +36,11 @@ func TestInstallCoreVariablesOnline(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.userHome != "" {
-				defer os.RemoveAll(tt.userHome)
+				defer func() {
+					if err := os.RemoveAll(tt.userHome); err != nil {
+						t.Logf("Failed to remove test directory: %v", err)
+					}
+				}()
 			}
 
 			err := InstallCoreVariablesOnline(tt.userHome)
@@ -138,7 +142,11 @@ test_variable: "test_value"
 			defer tt.cleanup(coreVarsPath)
 
 			if tt.userHome != "" {
-				defer os.RemoveAll(tt.userHome)
+				defer func() {
+					if err := os.RemoveAll(tt.userHome); err != nil {
+						t.Logf("Failed to remove test directory: %v", err)
+					}
+				}()
 			}
 
 			err := InstallCoreVariablesOffline(coreVarsPath, tt.userHome)

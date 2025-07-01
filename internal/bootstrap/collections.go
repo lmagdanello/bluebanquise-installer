@@ -164,7 +164,11 @@ func InstallCoreVariablesOnline(userHome string) error {
 		utils.LogError("Failed to download bb_core.yml", err, "url", bbCoreURL)
 		return fmt.Errorf("failed to download bb_core.yml: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			utils.LogWarning("Failed to close response body", "error", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		utils.LogError("Failed to download bb_core.yml", nil, "status", resp.StatusCode, "url", bbCoreURL)
@@ -176,7 +180,11 @@ func InstallCoreVariablesOnline(userHome string) error {
 		utils.LogError("Failed to create bb_core.yml file", err, "path", bbCorePath)
 		return fmt.Errorf("failed to create bb_core.yml file: %v", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			utils.LogWarning("Failed to close file", "error", closeErr)
+		}
+	}()
 
 	if _, err := io.Copy(file, resp.Body); err != nil {
 		utils.LogError("Failed to write bb_core.yml file", err, "path", bbCorePath)
@@ -263,13 +271,21 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer sourceFile.Close()
+	defer func() {
+		if closeErr := sourceFile.Close(); closeErr != nil {
+			utils.LogWarning("Failed to close source file", "error", closeErr)
+		}
+	}()
 
 	destFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer destFile.Close()
+	defer func() {
+		if closeErr := destFile.Close(); closeErr != nil {
+			utils.LogWarning("Failed to close destination file", "error", closeErr)
+		}
+	}()
 
 	_, err = io.Copy(destFile, sourceFile)
 	return err

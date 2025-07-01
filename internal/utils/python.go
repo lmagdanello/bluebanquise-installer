@@ -186,7 +186,11 @@ func ExportRHPython38(userHome string) error {
 		LogError("Failed to open .bashrc for RHEL7 Python configuration", err, "file", bashrc)
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			LogWarning("Failed to close file", "error", closeErr)
+		}
+	}()
 
 	for _, line := range lines {
 		if _, err := f.WriteString(line + "\n"); err != nil {

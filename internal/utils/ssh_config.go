@@ -74,7 +74,11 @@ func ConfigureSSH(userHome string) error {
 				LogError("Failed to open authorized_keys for writing", err, "path", authKeysPath)
 				return fmt.Errorf("failed to open authorized_keys for writing: %v", err)
 			}
-			defer file.Close()
+			defer func() {
+				if closeErr := file.Close(); closeErr != nil {
+					LogWarning("Failed to close file", "error", closeErr)
+				}
+			}()
 
 			if _, err := file.Write(pubKeyData); err != nil {
 				LogError("Failed to append to authorized_keys", err, "path", authKeysPath)
