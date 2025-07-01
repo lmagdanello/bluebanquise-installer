@@ -37,6 +37,30 @@ sudo ./bluebanquise-installer offline --collections-path /path/to/collections
 sudo ./bluebanquise-installer offline --tarball-path /path/to/tarballs
 ```
 
+#### Download collections:
+```bash
+# Download collections for offline installation
+./bluebanquise-installer download --path /tmp/collections
+
+# Transfer collections to target machine
+scp -r /tmp/collections user@target-machine:/tmp/
+
+# Install on target machine with offline collections
+sudo ./bluebanquise-installer offline --collections-path /tmp/collections
+```
+
+#### Download tarballs:
+```bash
+# Download tarballs for offline installation
+./bluebanquise-installer download --path /tmp/tarballs --tarball
+
+# Transfer tarballs to target machine
+scp -r /tmp/tarballs user@target-machine:/tmp/
+
+# Install on target machine with offline tarballs
+sudo ./bluebanquise-installer offline --tarball-path /tmp/tarballs
+```
+
 #### Using offline Python requirements:
 ```bash
 sudo ./bluebanquise-installer offline \
