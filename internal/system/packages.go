@@ -8,6 +8,7 @@ var PythonRequirements = []string{
 	"jmespath",
 	"jinja2",
 	"pymysql",
+	"setuptools",
 }
 
 type PackageDefinition struct {
@@ -22,7 +23,7 @@ var DependenciePackages = []PackageDefinition{
 		OSID:    "ubuntu",
 		Version: "24.04",
 		Packages: []string{
-			"python3", "python3-pip", "python3-venv",
+			"python3.12", "python3.12-pip", "python3.12-venv",
 			"ssh", "curl", "git",
 		},
 	},
@@ -30,7 +31,7 @@ var DependenciePackages = []PackageDefinition{
 		OSID:    "ubuntu",
 		Version: "22.04",
 		Packages: []string{
-			"python3", "python3-pip", "python3-venv",
+			"python3.12", "python3.12-pip", "python3.12-venv",
 			"ssh", "curl", "git",
 		},
 	},
@@ -64,7 +65,7 @@ var DependenciePackages = []PackageDefinition{
 		OSID:    "rhel",
 		Version: "9",
 		Packages: []string{
-			"git", "python3", "python3-pip", "python3-policycoreutils", "openssh-clients",
+			"git", "python3.12", "python3.12-pip", "python3-policycoreutils", "openssh-clients",
 		},
 	},
 	{
@@ -78,7 +79,7 @@ var DependenciePackages = []PackageDefinition{
 		OSID:    "debian",
 		Version: "12",
 		Packages: []string{
-			"python3", "python3-pip", "python3-venv", "git", "ssh", "curl",
+			"python3.12", "python3.12-pip", "python3.12-venv", "git", "ssh", "curl",
 		},
 	},
 	{

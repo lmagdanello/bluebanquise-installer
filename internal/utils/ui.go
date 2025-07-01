@@ -1,6 +1,9 @@
 package utils
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 // ShowCompletionMessage displays the completion message.
 func ShowCompletionMessage(userName, userHome string) {
@@ -17,4 +20,5 @@ func ShowCompletionMessage(userName, userHome string) {
 	fmt.Println("Thank you for using BlueBanquise :)")
 	fmt.Println("Have fun!")
 	fmt.Println()
+	os.Exit(0)
 }
