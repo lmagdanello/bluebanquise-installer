@@ -86,7 +86,23 @@ func GetPythonCommand() (string, error) {
 		case "8":
 			pythonCmd = "/usr/bin/python3.9"
 		case "9":
-			pythonCmd = "/usr/bin/python3.12"
+			// Try multiple Python versions for RHEL9
+			pythonVersions := []string{
+				"/usr/bin/python3.12",
+				"/usr/bin/python3.11",
+				"/usr/bin/python3.10",
+				"/usr/bin/python3.9",
+				"/usr/bin/python3",
+			}
+			for _, version := range pythonVersions {
+				if _, err := os.Stat(version); err == nil {
+					pythonCmd = version
+					break
+				}
+			}
+			if pythonCmd == "" {
+				pythonCmd = defaultPythonCmd
+			}
 		default:
 			pythonCmd = defaultPythonCmd
 		}
