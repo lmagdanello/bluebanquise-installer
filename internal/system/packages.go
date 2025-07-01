@@ -8,6 +8,8 @@ var PythonRequirements = []string{
 	"jmespath",
 	"jinja2",
 	"pymysql",
+	"setuptools",
+	"wheel",
 }
 
 type PackageDefinition struct {
@@ -57,14 +59,14 @@ var DependenciePackages = []PackageDefinition{
 		OSID:    "rhel",
 		Version: "8",
 		Packages: []string{
-			"git", "python39", "python3-pip", "python3-policycoreutils", "openssh-clients", "python39-setuptools",
+			"git", "python39", "python3-pip", "python3-policycoreutils", "openssh-clients",
 		},
 	},
 	{
 		OSID:    "rhel",
 		Version: "9",
 		Packages: []string{
-			"git", "python3.12", "python3.12-pip", "python3-policycoreutils", "openssh-clients", "python3.12-setuptools",
+			"git", "python3.12", "python3.12-pip", "python3-policycoreutils", "openssh-clients",
 		},
 	},
 	{
