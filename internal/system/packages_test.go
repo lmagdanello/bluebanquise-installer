@@ -186,6 +186,7 @@ func TestPythonRequirements(t *testing.T) {
 		"jmespath",
 		"jinja2",
 		"pymysql",
+		"setuptools",
 	}
 
 	assert.Len(t, PythonRequirements, len(expectedPackages))
