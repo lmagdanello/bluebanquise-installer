@@ -25,7 +25,7 @@ bluebanquise-installer-*
 .DS_Store
 Thumbs.db
 
-# Python virtualenvs (caso use para testes)
+# Python virtualenvs (in case used for tests)
 venv/
 .venv/
 

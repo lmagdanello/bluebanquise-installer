@@ -93,7 +93,7 @@ sudo ./bluebanquise-installer offline \
 
 #### Command options:
 
-- `--collections-path, -c`: Caminho para as collections BlueBanquise (diretório)
+- `--collections-path, -c`: Path to BlueBanquise collections (directory)
 - `--requirements-path, -r`: Path to Python requirements for offline installation
 - `--core-vars-path, -v`: Path to core variables (bb_core.yml) for offline installation
 - `--user, -u`: BlueBanquise username (default: bluebanquise)

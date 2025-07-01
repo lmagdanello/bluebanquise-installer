@@ -119,7 +119,7 @@ ci: install-tools
 	@make build
 	@echo "✅ All CI checks passed!"
 
-# Run CI checks without Docker (para desenvolvimento local)
+# Run CI checks without Docker (for local development)
 ci-local: install-tools
 	@echo "Running CI checks locally (without Docker)..."
 	@echo "1. Running linter..."

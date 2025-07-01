@@ -52,7 +52,7 @@ You can use --requirements-path for offline Python packages.`,
 			"skip_environment", offlineSkipEnvironment,
 			"debug", offlineDebug)
 
-		// Validar collections path
+		// Validate collections path
 		utils.LogInfo("Validating collections path", "path", collectionsPath)
 		fmt.Println("Validating collections path...")
 		if err := utils.CheckCollectionsPrerequisites(collectionsPath); err != nil {
@@ -61,7 +61,7 @@ You can use --requirements-path for offline Python packages.`,
 			os.Exit(1)
 		}
 
-		// Validar requirements path se fornecido
+		// Validate requirements path if provided
 		if requirementsPath != "" {
 			utils.LogInfo("Validating requirements path", "path", requirementsPath)
 			fmt.Println("Validating requirements path...")
@@ -72,7 +72,7 @@ You can use --requirements-path for offline Python packages.`,
 			}
 		}
 
-		// Validar core vars path se fornecido
+		// Validate core vars path if provided
 		if coreVarsPath != "" {
 			utils.LogInfo("Validating core variables path", "path", coreVarsPath)
 			fmt.Println("Validating core variables path...")
@@ -94,7 +94,7 @@ You can use --requirements-path for offline Python packages.`,
 		utils.LogInfo("OS detected", "os", osID, "version", version)
 		fmt.Printf("Detected OS: %s %s\n", osID, version)
 
-		// Encontrar pacotes para este OS
+		// Find packages for this OS
 		var packages []string
 		for _, pkg := range system.DependenciePackages {
 			if pkg.OSID == osID && pkg.Version == version {
@@ -109,7 +109,7 @@ You can use --requirements-path for offline Python packages.`,
 			os.Exit(1)
 		}
 
-		// Instalar pacotes de sistema
+		// Install system packages
 		utils.LogInfo("Installing system packages", "packages", packages)
 		fmt.Println("Installing system packages...")
 		if err := utils.InstallPackages(packages); err != nil {
@@ -118,7 +118,7 @@ You can use --requirements-path for offline Python packages.`,
 			os.Exit(1)
 		}
 
-		// Criar usuário bluebanquise
+		// Create bluebanquise user
 		utils.LogInfo("Creating BlueBanquise user", "user", userName, "home", userHome)
 		if err := bootstrap.CreateBluebanquiseUser(userName, userHome); err != nil {
 			utils.LogError("Error creating user", err, "user", userName, "home", userHome)
@@ -126,7 +126,7 @@ You can use --requirements-path for offline Python packages.`,
 			os.Exit(1)
 		}
 
-		// Configurar ambiente (a menos que seja pulado)
+		// Configure environment (unless skipped)
 		if !offlineSkipEnvironment {
 			utils.LogInfo("Configuring environment")
 			if err := bootstrap.ConfigureEnvironmentOffline(userName, userHome, requirementsPath); err != nil {
@@ -138,7 +138,7 @@ You can use --requirements-path for offline Python packages.`,
 			utils.LogInfo("Skipping environment configuration")
 		}
 
-		// Instalar collections (requer ambiente configurado)
+		// Install collections (requires configured environment)
 		utils.LogInfo("Installing collections from path", "path", collectionsPath)
 		if err := bootstrap.InstallCollectionsFromPath(collectionsPath, userHome); err != nil {
 			utils.LogError("Error installing collections from path", err, "path", collectionsPath)
@@ -146,7 +146,7 @@ You can use --requirements-path for offline Python packages.`,
 			os.Exit(1)
 		}
 
-		// Instalar core vars offline se fornecido
+		// Install core vars offline if provided
 		if coreVarsPath != "" {
 			utils.LogInfo("Installing core variables offline")
 			if err := bootstrap.InstallCoreVariablesOffline(coreVarsPath, userHome); err != nil {
