@@ -132,10 +132,21 @@ jobs:
           # Wait for dependencies to be fully installed
           sleep 5
           
+          # Download collections for offline test
+          docker exec test-offline-rocky9 bash -c "
+            cd /installer
+            mkdir -p /tmp/offline-packages
+            ./bluebanquise-installer download --path /tmp/offline-packages/collections
+            ./bluebanquise-installer download --path /tmp/offline-packages/requirements --requirements
+          "
+          
+          # Wait for downloads to complete
+          sleep 5
+          
           # Run offline installation (as root in container)
           docker exec test-offline-rocky9 bash -c "
             cd /installer
-            ./bluebanquise-installer offline --user testuser --home /tmp/bluebanquise
+            ./bluebanquise-installer offline --collections-path /tmp/offline-packages/collections --requirements-path /tmp/offline-packages/requirements --user testuser --home /tmp/bluebanquise
           "
           
           # Wait for installation to complete and any background processes
@@ -185,10 +196,21 @@ jobs:
           # Wait for dependencies to be fully installed
           sleep 5
           
-          # Run tarball installation (as root in container)
+          # Download tarballs for offline test
           docker exec test-tarball bash -c "
             cd /installer
-            ./bluebanquise-installer tarball --user testuser --home /tmp/bluebanquise
+            mkdir -p /tmp/tarball-packages
+            ./bluebanquise-installer download --path /tmp/tarball-packages --tarball
+            ./bluebanquise-installer download --path /tmp/tarball-packages/requirements --requirements
+          "
+          
+          # Wait for downloads to complete
+          sleep 5
+          
+          # Run offline installation with tarballs (as root in container)
+          docker exec test-tarball bash -c "
+            cd /installer
+            ./bluebanquise-installer offline --tarball-path /tmp/tarball-packages --requirements-path /tmp/tarball-packages/requirements --user testuser --home /tmp/bluebanquise
           "
           
           # Wait for installation to complete and any background processes
